@@ -1,0 +1,52 @@
+# Shared external SDK/tooling (symlinked in, lives in NPX_Workspace - too
+# large to duplicate/commit; see EDGE_NODE build.sh for how it's located)
+mcuxsdk
+tools
+
+# Firmware build output (west/CMake, any subproject)
+build/
+build_dualcore/
+**/build/
+**/build_dualcore/
+
+# KiCad (PCB_DES) - generated/cache/lock files, not the design itself
+**/*-backups/
+**/_autosave-*
+**/*.kicad_pcb-bak
+**/*.kicad_sch-bak
+**/*.kicad_prl
+**/fp-info-cache
+**/*.lck
+**/*.bck
+
+# KiCad fabrication output (gerbers/drill/pick-and-place - regenerated from source, not source itself)
+**/Gerbers/
+**/gerbers/
+**/plot/
+**/*.gbr
+**/*.gbrjob
+**/*.drl
+**/*.pos
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Python (west/pyOCD tooling, future CLOUD_SERVER)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node (future CLOUD_SERVER web app)
+node_modules/
+
+# Secrets / local env
+.env
+.env.*
