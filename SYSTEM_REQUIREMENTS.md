@@ -108,11 +108,11 @@ These are fixed inputs to the project, not choices open to the design team.
 | ID | Constraint |
 |---|---|
 | CON-1 | The door device shall be built on the NXP FRDM-MCXN947 development board. |
-| CON-2 | Network connectivity shall be provided by an ESP-WROOM-32E module. |
+| CON-2 | Network connectivity shall be provided by an ESP32-C5 DevKit 2.0 module. |
 | CON-3 | Image capture shall use an OV7670 camera module. |
 | CON-4 | Card reading shall use an MFRC522 RFID reader operating at 13.56 MHz. |
 | CON-5 | User feedback shall be presented on a 2.4 inch SPI TFT display. |
-| CON-6 | The door latch shall be driven by a stepper motor. |
+| CON-6 | The door latch shall be driven by a servo motor. |
 | CON-7 | Face detection shall execute on the integrated NPU of the MCXN947. Detection shall not depend on the general-purpose CPU for its main computation. |
 | CON-8 | Face recognition shall execute on the server. It shall not execute on the door device. |
 | CON-9 | Available flash memory on the device limits how much data can be buffered offline. The offline buffering requirements shall be met within this limit. |

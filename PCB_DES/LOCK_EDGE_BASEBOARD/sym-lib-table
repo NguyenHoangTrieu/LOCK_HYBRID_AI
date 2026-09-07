@@ -1,0 +1,8 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "tft-240x320-spi") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/tft_240x320_spi_touch_14p.kicad_sym") (options "") (descr "2.4in 240x320 SPI TFT LCD module w/ touch (ILI9341-family, 14-pin) - copied from the FOX M4 test design project"))
+	(lib (name "esp32-c5-devkit-v2") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/esp32_c5_devkit_v2.kicad_sym") (options "") (descr "ESP32-C5-DevKit V2.0 - self-drawn against the physical board, empty skeleton ready to edit"))
+	(lib (name "arduino-header") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/arduino_header.kicad_sym") (options "") (descr "Arduino Uno-compatible pin header (power/analog/digital rows only, no ICSP, no board-outline artwork) - pad layout from github.com/Alarm-Siren/arduino-kicad-library, trimmed down to just the connector"))
+	(lib (name "rfid-rc522") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/rfid_rc522.kicad_sym") (options "") (descr "13.56MHz RFID-RC522 (MFRC522) module, SPI, 8-pin header - self-drawn"))
+	(lib (name "servo-motor-3pin") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/servo_motor_3pin.kicad_sym") (options "") (descr "3-pin 2.54mm hobby servo header (SIG/VCC/GND) - self-drawn"))
+)

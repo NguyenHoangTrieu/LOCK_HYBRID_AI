@@ -54,9 +54,9 @@ are unchanged from the original project.
 
 What still needs to be added on top of this bring-up code to satisfy the
 Edge AI Node requirements in the SRS: RFID reader (MFRC522) integration
-(HI-2), stepper-motor latch control with fail-locked behavior (HI-3, HI-4,
+(HI-2), servo-motor latch control with fail-locked behavior (HI-3, HI-4,
 SR-6), the state machine described in ARCHITECTURE.md §2.4, network
-communication with the Cloud Backend over the ESP-WROOM-32E (CON-2, CI-1
+communication with the Cloud Backend over the ESP32-C5 DevKit 2.0 (CON-2, CI-1
 to CI-5), and offline event buffering (FR-19 to FR-25).
 
 ### CLOUD_SERVER

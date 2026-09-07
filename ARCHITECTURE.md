@@ -41,8 +41,8 @@ graph TD
     RFID["Card Reader<br/>MFRC522"]
     MCU["<b>FRDM-MCXN947</b><br/>controller + NPU"]
     LCD["Display<br/>2.4in TFT"]
-    MOTOR["Stepper Motor<br/>door latch"]
-    ESP["Wi-Fi Module<br/>ESP-WROOM-32E"]
+    MOTOR["Servo Motor<br/>door latch"]
+    ESP["Wi-Fi Module<br/>ESP32-C5 DevKit 2.0"]
 
     CAM -->|"DVP + SmartDMA"| MCU
     RFID -->|"SPI"| MCU
@@ -59,8 +59,8 @@ graph TD
 | **OV7670** | Streams raw frames | No onboard JPEG. Configure over SCCB at boot, then pull frames with SmartDMA — this is the peripheral NXP provides for DVP capture on MCX N |
 | **MFRC522** | Reports a card UID when one is present | Makes no access decision (FR-10) |
 | **TFT display** | Output only | Must never block other work — a long display write during a card tap loses the tap |
-| **Stepper motor** | Output only | Needs its own power rail. Defaults to locked (SR-6) |
-| **ESP-WROOM-32E** | Network transport only | Deliberately contains no business logic, so all security-relevant code stays in one place |
+| **Servo motor** | Output only | Needs its own power rail. Defaults to locked (SR-6) |
+| **ESP32-C5 DevKit 2.0** | Network transport only | Deliberately contains no business logic, so all security-relevant code stays in one place |
 
 ### 2.3 Firmware Structure
 
