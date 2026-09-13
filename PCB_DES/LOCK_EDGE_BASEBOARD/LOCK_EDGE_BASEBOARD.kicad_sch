@@ -1298,6 +1298,296 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "power:GNDREF"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -6.35 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "GNDREF"
+				(at 0 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "GNDREF_0_1"
+				(polyline
+					(pts
+						(xy -0.635 -1.905) (xy 0.635 -1.905)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -0.127 -2.54) (xy 0.127 -2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.27) (xy 0 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -1.27) (xy -1.27 -1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "GNDREF_1_1"
+				(pin power_in line
+					(at 0 0 270)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "power:VDD"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "VDD"
+				(at 0 3.556 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"VDD\""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "VDD_0_1"
+				(polyline
+					(pts
+						(xy -0.762 1.27) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "VDD_1_1"
+				(pin power_in line
+					(at 0 0 90)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "rfid-rc522:RFID-RC522"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -2049,9 +2339,1141 @@
 			(embedded_fonts no)
 		)
 	)
+	(no_connect
+		(at 93.98 95.25)
+		(uuid "0a0d0d7b-8d49-4316-90fe-fbd38ee05597")
+	)
+	(no_connect
+		(at 198.12 107.95)
+		(uuid "0e1a13aa-fac2-4f22-a858-a046d8df7139")
+	)
+	(no_connect
+		(at 93.98 120.65)
+		(uuid "21ecb01c-94b4-4085-82d1-5049e212b450")
+	)
+	(no_connect
+		(at 43.18 125.73)
+		(uuid "2f814c59-0d5a-4692-916a-b43cac195189")
+	)
+	(no_connect
+		(at 157.48 113.03)
+		(uuid "308b2a6b-f2fd-4531-b479-2cbca0726acc")
+	)
+	(no_connect
+		(at 157.48 115.57)
+		(uuid "32de3004-6277-4b3a-88ad-d5eff7e494bf")
+	)
+	(no_connect
+		(at 157.48 125.73)
+		(uuid "3ddf3734-75e6-47e5-90d2-bef39bdb6169")
+	)
+	(no_connect
+		(at 157.48 118.11)
+		(uuid "45644fec-50ac-458c-9e19-c88ead336254")
+	)
+	(no_connect
+		(at 157.48 133.35)
+		(uuid "4cf1518c-9554-43d8-a131-4893e4f51875")
+	)
+	(no_connect
+		(at 198.12 130.81)
+		(uuid "506196a8-07a8-498b-9de0-8c0bf03c6dca")
+	)
+	(no_connect
+		(at 198.12 102.87)
+		(uuid "790b5bd8-0309-4d8c-a732-eaae3269b2d4")
+	)
+	(no_connect
+		(at 198.12 118.11)
+		(uuid "8b304534-0144-4134-ac24-cf06a6d679ca")
+	)
+	(no_connect
+		(at 93.98 97.79)
+		(uuid "90bcf61b-09ae-4823-85dc-c70ba34850c7")
+	)
+	(no_connect
+		(at 198.12 105.41)
+		(uuid "9b7fa381-f6ff-404b-95e7-7e34cc361131")
+	)
+	(no_connect
+		(at 198.12 110.49)
+		(uuid "a1e9bb31-d202-4bf1-8685-0fdd4994a55b")
+	)
+	(no_connect
+		(at 93.98 92.71)
+		(uuid "a638948e-828d-430e-b5cc-b3b4a48800c3")
+	)
+	(no_connect
+		(at 198.12 128.27)
+		(uuid "a646770d-3273-4388-8708-44272d9078b8")
+	)
+	(no_connect
+		(at 157.48 120.65)
+		(uuid "a7109660-cf93-4ad3-a528-72f6e19bf1d7")
+	)
+	(no_connect
+		(at 157.48 105.41)
+		(uuid "a887b937-7040-4ecd-b520-351ab98332e9")
+	)
+	(no_connect
+		(at 157.48 102.87)
+		(uuid "b2277f11-09bf-492e-acdb-fd9d193ea174")
+	)
+	(no_connect
+		(at 43.18 95.25)
+		(uuid "b69d8c9f-e976-44ec-8a8f-e69fb9162d37")
+	)
+	(no_connect
+		(at 43.18 110.49)
+		(uuid "bae96022-9186-47b1-9407-bf99426472a7")
+	)
+	(no_connect
+		(at 93.98 135.89)
+		(uuid "c0a8c0cc-e778-41ed-8049-ea0043004686")
+	)
+	(no_connect
+		(at 157.48 110.49)
+		(uuid "d0780cc6-646c-4636-a950-56e8501b4567")
+	)
+	(no_connect
+		(at 198.12 100.33)
+		(uuid "d0c6bfa3-045f-409d-9a61-6e4a9381375f")
+	)
+	(no_connect
+		(at 93.98 133.35)
+		(uuid "e4eba179-c30f-4a67-b4d4-b7ecdd0e4061")
+	)
+	(no_connect
+		(at 43.18 97.79)
+		(uuid "ebd5fba5-89bb-4a22-9efc-1d55ae9f3057")
+	)
+	(no_connect
+		(at 157.48 107.95)
+		(uuid "ed1610a5-200e-4861-8bbf-7e6773278301")
+	)
+	(no_connect
+		(at 43.18 123.19)
+		(uuid "eeabfe15-0d11-4ccb-bfe7-45c7d543561a")
+	)
+	(no_connect
+		(at 198.12 113.03)
+		(uuid "f38d3a50-a46f-4431-843d-4ce4218e5832")
+	)
+	(no_connect
+		(at 157.48 130.81)
+		(uuid "f49d8317-417c-4f96-8800-b691e6a78879")
+	)
+	(no_connect
+		(at 43.18 92.71)
+		(uuid "f55e7886-39ba-413d-954c-5eb32cf579fe")
+	)
+	(no_connect
+		(at 157.48 123.19)
+		(uuid "f6a7775b-c5ab-4f4a-92ed-9be82e54f3a8")
+	)
+	(wire
+		(pts
+			(xy 93.98 110.49) (xy 114.3 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1514c1b6-ff14-49a5-b0ac-2c6734121b41")
+	)
+	(wire
+		(pts
+			(xy 25.4 130.81) (xy 43.18 130.81)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "17091ea1-64b4-4666-8f14-ed57a2db2af6")
+	)
+	(wire
+		(pts
+			(xy 25.4 135.89) (xy 43.18 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "181fb228-0be1-414e-8ecf-8b48d0dd75bb")
+	)
+	(wire
+		(pts
+			(xy 25.4 160.02) (xy 45.72 160.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1e8ed541-17a3-475b-911d-ff6190001d02")
+	)
+	(wire
+		(pts
+			(xy 165.1 48.26) (xy 184.15 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1eea090c-7cde-4e6c-b4c5-9ca2bca79033")
+	)
+	(wire
+		(pts
+			(xy 78.74 40.64) (xy 95.25 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "218525c5-87d9-400a-ba5c-c61d977d3a23")
+	)
+	(wire
+		(pts
+			(xy 93.98 100.33) (xy 114.3 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29050f4e-4109-4c48-8aeb-6f7fef68a20f")
+	)
+	(wire
+		(pts
+			(xy 93.98 105.41) (xy 114.3 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3037be82-3f3f-449f-a555-f6e903f5b639")
+	)
+	(wire
+		(pts
+			(xy 114.3 48.26) (xy 134.62 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3165cd5e-523b-4076-9926-355a4aa4f516")
+	)
+	(wire
+		(pts
+			(xy 31.75 40.64) (xy 48.26 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "36bdcb15-d4a0-443d-8952-d2627154044c")
+	)
+	(wire
+		(pts
+			(xy 31.75 53.34) (xy 48.26 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3d000e12-634c-41f8-ac43-3c05cf1398fd")
+	)
+	(wire
+		(pts
+			(xy 93.98 107.95) (xy 114.3 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3f2466e5-9693-4e18-8efd-3cdaee1ba8e9")
+	)
+	(wire
+		(pts
+			(xy 78.74 60.96) (xy 95.25 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "40bf0b26-38c6-4529-bd19-43a5c652c2af")
+	)
+	(wire
+		(pts
+			(xy 198.12 135.89) (xy 215.9 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "47b4e214-5578-4147-9d5a-ddab63dc6aa8")
+	)
+	(wire
+		(pts
+			(xy 25.4 157.48) (xy 45.72 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4a11de98-632c-48aa-8651-34bd37ce71f1")
+	)
+	(wire
+		(pts
+			(xy 78.74 48.26) (xy 95.25 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "527b1ad0-cad5-421e-8ff7-a630c4494858")
+	)
+	(wire
+		(pts
+			(xy 25.4 162.56) (xy 45.72 162.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5532b56f-c567-43e5-93fc-319d7b1a5493")
+	)
+	(wire
+		(pts
+			(xy 31.75 50.8) (xy 48.26 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ebc11ed-2168-4d1e-a587-ac044d975674")
+	)
+	(wire
+		(pts
+			(xy 25.4 128.27) (xy 43.18 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "60a27494-9181-43bf-9f82-a5967886fdaa")
+	)
+	(wire
+		(pts
+			(xy 93.98 123.19) (xy 114.3 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6134857c-5d43-4958-806e-2d00bc0e844d")
+	)
+	(wire
+		(pts
+			(xy 93.98 130.81) (xy 114.3 130.81)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "67637dbe-b28b-4f28-8929-2ccfe5fdb992")
+	)
+	(wire
+		(pts
+			(xy 78.74 50.8) (xy 95.25 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6977d08a-d4d7-4f9e-aa4e-ea4592da5311")
+	)
+	(wire
+		(pts
+			(xy 198.12 115.57) (xy 215.9 115.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "74ac4c48-7d2e-4392-97da-ee3708c2de7a")
+	)
+	(wire
+		(pts
+			(xy 78.74 53.34) (xy 95.25 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "779f8b5c-9ac0-4cad-a2bd-6c4b978cab59")
+	)
+	(wire
+		(pts
+			(xy 139.7 100.33) (xy 157.48 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7bd4d176-1330-4039-90ab-9aeff2dcfac6")
+	)
+	(wire
+		(pts
+			(xy 31.75 58.42) (xy 48.26 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7d5e3b88-2a84-47b3-a32f-20b2e59e49d5")
+	)
+	(wire
+		(pts
+			(xy 31.75 55.88) (xy 48.26 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "882c2461-657c-45f9-a358-42e904c99a21")
+	)
+	(wire
+		(pts
+			(xy 25.4 105.41) (xy 43.18 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8e5f41d5-9b07-42f9-88fa-d5aa86b593d0")
+	)
+	(wire
+		(pts
+			(xy 78.74 58.42) (xy 95.25 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "914a6421-3ccb-4cb8-8de9-67a5090b8789")
+	)
+	(wire
+		(pts
+			(xy 93.98 113.03) (xy 114.3 113.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "941307cf-b15a-42dd-bf65-501e4af93a8d")
+	)
+	(wire
+		(pts
+			(xy 165.1 43.18) (xy 184.15 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "94a57dee-1acd-4576-91eb-99a68769da42")
+	)
+	(wire
+		(pts
+			(xy 165.1 40.64) (xy 184.15 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9925af16-4ba1-468b-8c4c-0d6a491e6066")
+	)
+	(wire
+		(pts
+			(xy 93.98 118.11) (xy 114.3 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99f9d4b6-a5e1-433f-8cc4-06a632e9eb82")
+	)
+	(wire
+		(pts
+			(xy 114.3 43.18) (xy 134.62 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a29f927-56a2-4fc1-a443-515ac5f7b585")
+	)
+	(wire
+		(pts
+			(xy 93.98 115.57) (xy 114.3 115.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a4db5d8-e23b-4b9a-9743-793133ba7e13")
+	)
+	(wire
+		(pts
+			(xy 198.12 125.73) (xy 215.9 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "aa5fa203-266a-42c4-93e7-e9031b263d47")
+	)
+	(wire
+		(pts
+			(xy 114.3 45.72) (xy 134.62 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "aeba09b0-5bab-4d2d-82f5-3397d41e0523")
+	)
+	(wire
+		(pts
+			(xy 31.75 60.96) (xy 48.26 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b54fe938-4b18-4f66-966e-cb8e0fe76dcb")
+	)
+	(wire
+		(pts
+			(xy 165.1 45.72) (xy 184.15 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bb4fc50d-fecf-43f6-9d72-052617a01d20")
+	)
+	(wire
+		(pts
+			(xy 93.98 125.73) (xy 114.3 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd14700a-7445-45e2-b6cd-314d18ecc1b0")
+	)
+	(wire
+		(pts
+			(xy 78.74 55.88) (xy 95.25 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd3f7532-14f8-4682-ab64-ea6c6ab6fdaa")
+	)
+	(wire
+		(pts
+			(xy 25.4 107.95) (xy 43.18 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd8f2930-d253-4d08-ac0e-90b53830ec28")
+	)
+	(wire
+		(pts
+			(xy 139.7 135.89) (xy 157.48 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be117a66-472e-4fa4-b937-1f5e06ea9c48")
+	)
+	(wire
+		(pts
+			(xy 25.4 100.33) (xy 43.18 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3292ed5-2746-4b57-9a9a-3ee24e645a0c")
+	)
+	(wire
+		(pts
+			(xy 93.98 128.27) (xy 114.3 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c6a64509-282c-40ca-9fc1-09450cc035e1")
+	)
+	(wire
+		(pts
+			(xy 31.75 48.26) (xy 48.26 48.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cb8c5135-40b6-49a1-9116-045b3a8857c6")
+	)
+	(wire
+		(pts
+			(xy 31.75 45.72) (xy 48.26 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf22f6d3-1095-4260-b830-4e92d2d172cf")
+	)
+	(wire
+		(pts
+			(xy 78.74 45.72) (xy 95.25 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d54305b2-1837-443f-93b0-b5571de3eac5")
+	)
+	(wire
+		(pts
+			(xy 139.7 128.27) (xy 157.48 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d72051d2-42c2-4bb8-bcdd-41b897d51859")
+	)
+	(wire
+		(pts
+			(xy 198.12 133.35) (xy 215.9 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "daeb3d56-2f91-480e-b57b-f244d6c7d7c9")
+	)
+	(wire
+		(pts
+			(xy 78.74 43.18) (xy 95.25 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "df381b49-aa51-441a-bbb4-bfac557fe751")
+	)
+	(wire
+		(pts
+			(xy 198.12 120.65) (xy 215.9 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea713ef5-dcd1-4909-9500-a94df641b359")
+	)
+	(wire
+		(pts
+			(xy 93.98 102.87) (xy 114.3 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea82ce6b-79b7-49f4-a827-ed83067798b5")
+	)
+	(wire
+		(pts
+			(xy 25.4 102.87) (xy 43.18 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ecbbf208-2277-4dba-bc1a-14a2e77f558e")
+	)
+	(wire
+		(pts
+			(xy 31.75 43.18) (xy 48.26 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fa10549f-cddc-4614-a03a-af4e9a9a948a")
+	)
+	(wire
+		(pts
+			(xy 25.4 133.35) (xy 43.18 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fe1c70f4-0d53-4c8b-8e2a-31d2a4c326e4")
+	)
+	(wire
+		(pts
+			(xy 198.12 123.19) (xy 215.9 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fea21918-4b2e-4748-998b-84f4355347a3")
+	)
+	(wire
+		(pts
+			(xy 114.3 40.64) (xy 134.62 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fed96460-a0ba-4c27-b5ae-f801f7e4c242")
+	)
+	(label "SPI_MISO"
+		(at 215.9 120.65 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "01550c47-c295-44aa-aec3-e9afe6e6fbbb")
+	)
+	(label "RFID_RST"
+		(at 114.3 130.81 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "1d031963-eff5-4a65-92ba-daa342fe0437")
+	)
+	(label "SPI_SCK"
+		(at 114.3 102.87 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "2af0a68d-2012-4d80-a6e7-8e1228a8da06")
+	)
+	(label "TFT_DC"
+		(at 95.25 40.64 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "38523e71-65e0-498c-8607-083a50993b47")
+	)
+	(label "TOUCH_CS"
+		(at 31.75 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4053d511-eb92-47d8-9038-9dd35f78f2d1")
+	)
+	(label "RFID_CS"
+		(at 114.3 40.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4d1b252f-206b-4f86-9ab3-4584ad3e0629")
+	)
+	(label "TOUCH_IRQ"
+		(at 114.3 118.11 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "5256d640-c74e-4a29-9240-e9abc3b50ccf")
+	)
+	(label "SPI_MISO"
+		(at 95.25 58.42 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "556002ad-91b9-44f3-a759-1517b3cc6010")
+	)
+	(label "SERVO_PWM"
+		(at 25.4 157.48 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "6d0076af-a33c-4855-8982-7c1897235f4c")
+	)
+	(label "TFT_RESET"
+		(at 114.3 125.73 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "6d2376bd-2f37-44ad-a821-7edaeecc21d9")
+	)
+	(label "TFT_LED"
+		(at 31.75 55.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "6e69d7a9-1f12-49d6-a3fa-b028b1f1ade5")
+	)
+	(label "SPI_MOSI"
+		(at 95.25 55.88 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "706e4748-1726-427d-8151-2be428e54417")
+	)
+	(label "SPI_MISO"
+		(at 114.3 107.95 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "74e301e3-8602-4f5e-a0d2-17b599285ec1")
+	)
+	(label "SPI_MOSI"
+		(at 31.75 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "76307eb8-4ea2-4b2b-9ee2-4fe9782422aa")
+	)
+	(label "RFID_IRQ"
+		(at 25.4 128.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "77e4dd49-3df5-4d59-9308-063bc2a362f6")
+	)
+	(label "SPI_SCK"
+		(at 95.25 60.96 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "7d158c55-c578-4e73-b831-2c713c0f7a9e")
+	)
+	(label "RFID_CS"
+		(at 114.3 115.57 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8264dc7f-928c-47e3-ab5d-eba3ece7e915")
+	)
+	(label "TFT_CS"
+		(at 95.25 45.72 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "84d07426-91f6-4662-b10d-3f2494c5cf0e")
+	)
+	(label "TFT_RESET"
+		(at 95.25 43.18 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8d7ab1ec-2c61-4717-af58-3a141df777eb")
+	)
+	(label "SPI_MOSI"
+		(at 215.9 125.73 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8ff8bad5-fa41-4d16-b7f1-ce3e8637939a")
+	)
+	(label "SPI_MISO"
+		(at 31.75 53.34 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "92e50fe7-9846-403b-bf8c-6f6fcee35b66")
+	)
+	(label "TOUCH_IRQ"
+		(at 31.75 40.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "95cb4f44-e74e-45bb-89f9-d65f2d11077a")
+	)
+	(label "SPI_SCK"
+		(at 215.9 115.57 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "97e96448-03e7-4df3-b0a3-d8fe86787e09")
+	)
+	(label "SPI_MOSI"
+		(at 31.75 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9c27b9a5-1489-4a05-a63a-3e0da7850b5b")
+	)
+	(label "SERVO_PWM"
+		(at 114.3 113.03 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "9c98a2ed-9b9a-4a21-bb84-0530c94cd3a5")
+	)
+	(label "SPI_MISO"
+		(at 31.75 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9f33d5ec-37d4-4ad7-9529-6a03a6270ab7")
+	)
+	(label "TFT_CS"
+		(at 114.3 128.27 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "a3b2965b-212a-4348-9193-7945487d0f51")
+	)
+	(label "SPI_MOSI"
+		(at 114.3 105.41 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ac80bde8-4b88-4580-ad6f-4274edcd3f4f")
+	)
+	(label "SPI_SCK"
+		(at 114.3 43.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "acdea372-3813-4c88-b795-889d23921208")
+	)
+	(label "SD_CS"
+		(at 95.25 53.34 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b0202899-a2f9-45e3-aba5-1c63e6bca35d")
+	)
+	(label "SPI_SCK"
+		(at 31.75 58.42 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b1f9c485-4397-438a-a0f6-c6a199f6a80d")
+	)
+	(label "SPI_MISO"
+		(at 114.3 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "bc30ab9b-954a-486d-9d0c-6bce2f27bed6")
+	)
+	(label "SD_CS"
+		(at 25.4 130.81 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ceed7e80-69b8-4122-80d7-7ebc7f32f2d3")
+	)
+	(label "TFT_DC"
+		(at 114.3 123.19 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d25882ed-dedb-4386-be39-50d5d2f04839")
+	)
+	(label "RFID_IRQ"
+		(at 184.15 48.26 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d3222601-1af1-41c8-b3fc-7add46b31534")
+	)
+	(label "RFID_RST"
+		(at 184.15 43.18 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d456edc2-f832-475c-974e-bcf8c6cd1e5f")
+	)
+	(label "ESP32_CS"
+		(at 215.9 123.19 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "db1ff8f5-f54d-404e-a853-e25e25d0f9a4")
+	)
+	(label "TFT_LED"
+		(at 114.3 110.49 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e8274109-8159-438a-b6fa-79a24fe9ad91")
+	)
+	(label "ESP32_CS"
+		(at 25.4 135.89 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ef331933-24cb-4d34-88b7-fb672bce5fac")
+	)
+	(label "SPI_SCK"
+		(at 31.75 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f4f1b9c7-2eab-4ad8-be95-4afeadbdf746")
+	)
+	(label "SPI_MOSI"
+		(at 114.3 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f549fbd9-f9bf-4da4-a48d-55a3b73fea4b")
+	)
+	(label "TOUCH_CS"
+		(at 25.4 133.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f7209c88-235d-418b-a6c2-f7114ee4f876")
+	)
 	(symbol
-		(lib_id "servo-motor-3pin:Servo_Motor_3Pin")
-		(at 170.18 43.18 0)
+		(lib_id "power:GNDREF")
+		(at 25.4 162.56 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2060,31 +3482,31 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "67523af6-5982-467a-aaa8-dad52fe011dd")
-		(property "Reference" "J1"
-			(at 176.53 41.9099 0)
+		(uuid "27be5267-55b3-4663-9c1f-22d52a84f94f")
+		(property "Reference" "#PWR05"
+			(at 19.05 162.56 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
-		(property "Value" "Servo_Motor_3Pin"
-			(at 176.53 44.4499 0)
+		(property "Value" "GND"
+			(at 21.59 162.5599 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
-		(property "Footprint" "Library:Servo_Header_1x03_P2.54mm"
-			(at 170.18 43.18 0)
+		(property "Footprint" ""
+			(at 25.4 162.56 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2095,7 +3517,481 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 170.18 43.18 0)
+			(at 25.4 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 25.4 162.56 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "91cda8e4-fc88-4b5a-a7c0-fa9f2f6e180e")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR05")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 184.15 40.64 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2b615e23-c187-43a5-a28b-f95e1ee0255f")
+		(property "Reference" "#PWR014"
+			(at 180.34 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_3V3"
+			(at 187.96 40.6399 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 184.15 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 184.15 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 184.15 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5b2b39fb-f2a0-4695-99fb-0caac964a0c4")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR014")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 139.7 135.89 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4b817fd3-d622-49c9-a990-15fe29916db5")
+		(property "Reference" "#PWR017"
+			(at 133.35 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 135.89 135.8899 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 139.7 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 139.7 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 139.7 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "3de3aab0-82e6-4741-8acb-45319b9c659b")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR017")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 139.7 100.33 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5120dbb4-a0ec-4784-9f36-c9c807c36f43")
+		(property "Reference" "#PWR019"
+			(at 133.35 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 135.89 100.3299 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 139.7 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 139.7 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 139.7 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fcc5a56d-1928-43f8-bd76-1f933f3c1520")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR019")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 25.4 102.87 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5bd25cce-9889-4e85-a418-f0110e91ff7d")
+		(property "Reference" "#PWR09"
+			(at 29.21 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_3V3"
+			(at 21.59 102.8699 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 25.4 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 25.4 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 25.4 102.87 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "61b61775-a362-4a97-9cf6-e3021563ee30")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR09")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 139.7 128.27 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "60e9e55c-a967-4d0e-a78c-1842f93ba499")
+		(property "Reference" "#PWR018"
+			(at 133.35 128.27 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 135.89 128.2699 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 139.7 128.27 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 139.7 128.27 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 139.7 128.27 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "413e0d16-db40-4ae6-8400-7522fd9fc944")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR018")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "servo-motor-3pin:Servo_Motor_3Pin")
+		(at 55.88 160.02 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "67523af6-5982-467a-aaa8-dad52fe011dd")
+		(property "Reference" "J1"
+			(at 62.23 158.7499 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Servo_Motor_3Pin"
+			(at 62.23 161.2899 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Library:Servo_Header_1x03_P2.54mm"
+			(at 55.88 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 55.88 160.02 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2106,7 +4002,7 @@
 			)
 		)
 		(property "Description" "3-pin 2.54mm header for a standard hobby RC servo (SG90-class), pin order Signal/VCC/GND. This is a generic, unbranded pin layout - not a part any manufacturer publishes a library for - self-drawn. Some servo brands swap the GND/Signal order at the connector; verify against your specific servo before mating."
-			(at 170.18 43.18 0)
+			(at 55.88 160.02 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2129,6 +4025,243 @@
 			(project "LOCK_EDGE_BASEBOARD"
 				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
 					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 95.25 48.26 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6cbe5bbe-177c-4c15-9f82-92af8579c5bd")
+		(property "Reference" "#PWR013"
+			(at 101.6 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 99.06 48.2599 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 95.25 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 95.25 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 95.25 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "dce7ec96-c945-4a9f-8f75-2fcb678eedd3")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR013")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 184.15 45.72 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8c24aa3f-c4e8-4922-9dc7-bae37774c139")
+		(property "Reference" "#PWR015"
+			(at 190.5 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 187.96 45.7199 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 184.15 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 184.15 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 184.15 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6787a052-2b1c-43a9-af07-57ef96d8f917")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR015")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 215.9 135.89 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8d42fbbd-4e53-469f-a336-40fa13cdd5c9")
+		(property "Reference" "#PWR07"
+			(at 222.25 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 219.71 135.8899 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 215.9 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 215.9 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 215.9 135.89 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ba471cb4-5640-4054-89c2-f634becd5415")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR07")
 					(unit 1)
 				)
 			)
@@ -2433,8 +4566,8 @@
 		)
 	)
 	(symbol
-		(lib_id "rfid-rc522:RFID-RC522")
-		(at 124.46 48.26 0)
+		(lib_id "power:GNDREF")
+		(at 25.4 105.41 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2443,9 +4576,10 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "cf8b3d66-6830-43b9-b676-a8ac6f179ebe")
-		(property "Reference" "U2"
-			(at 124.46 33.02 0)
+		(uuid "96a946a1-ea23-4ad2-94dc-18c1cda3366f")
+		(property "Reference" "#PWR011"
+			(at 19.05 105.41 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2454,18 +4588,19 @@
 				)
 			)
 		)
-		(property "Value" "RFID-RC522"
-			(at 124.46 35.56 0)
+		(property "Value" "GND"
+			(at 21.59 105.4099 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
-		(property "Footprint" "Library:RFID-RC522_Header_1x08_P2.54mm"
-			(at 125.476 54.864 0)
+		(property "Footprint" ""
+			(at 25.4 105.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2476,7 +4611,400 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 124.46 48.26 0)
+			(at 25.4 105.41 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 25.4 105.41 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "27534ad4-d256-451a-9a3f-a311d8b0c15d")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR011")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 95.25 50.8 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a2993d8b-1cab-4e37-86f7-bfb883b9ce8f")
+		(property "Reference" "#PWR012"
+			(at 91.44 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_5V0"
+			(at 99.06 50.7999 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 95.25 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 95.25 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 95.25 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "88a83735-8f4c-4dd0-91b1-8305f92cf42d")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR012")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 25.4 100.33 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a91587d7-7b67-4082-b99a-24e75c03cab5")
+		(property "Reference" "#PWR08"
+			(at 29.21 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_5V0"
+			(at 21.59 100.3299 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 25.4 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 25.4 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 25.4 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "95d4b4fd-a0a9-4f5c-9445-c0c0934b5359")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR08")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 25.4 160.02 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "afe5efd3-5519-4b00-97df-6c158c4b4e5f")
+		(property "Reference" "#PWR04"
+			(at 29.21 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_5V0"
+			(at 21.59 160.0199 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 25.4 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 25.4 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 25.4 160.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0c154bf2-780d-43cb-9432-ccfe261a0bfe")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR04")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 114.3 100.33 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c7dd33b4-124d-48db-8997-63efec9077ff")
+		(property "Reference" "#PWR016"
+			(at 120.65 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 118.11 100.3299 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 114.3 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 114.3 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 114.3 100.33 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "b2c4716f-7b28-48fe-8a66-6d9ad2b70577")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR016")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "rfid-rc522:RFID-RC522")
+		(at 149.86 48.26 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "cf8b3d66-6830-43b9-b676-a8ac6f179ebe")
+		(property "Reference" "U2"
+			(at 149.86 33.02 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RFID-RC522"
+			(at 149.86 35.56 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:RFID-RC522_Header_1x08_P2.54mm"
+			(at 150.876 54.864 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 149.86 48.26 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2487,7 +5015,7 @@
 			)
 		)
 		(property "Description" "13.56MHz RFID reader module (NXP MFRC522 chip), SPI interface, 8-pin single-row 2.54mm header. Self-drawn from the standard RC522 breakout pinout - no clean modern KiCad library found that is freely downloadable without an account; verify exact board outline/pin spacing against your specific vendor's module before fab."
-			(at 124.206 52.324 0)
+			(at 149.606 52.324 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2531,8 +5059,8 @@
 		)
 	)
 	(symbol
-		(lib_id "esp32-c5-devkit-v2:ESP32-C5-DevKit-V2")
-		(at 127 130.81 0)
+		(lib_id "power:GNDREF")
+		(at 25.4 107.95 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2541,9 +5069,10 @@
 		(in_pos_files yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "fb301cdf-7289-49bd-9069-226633c0387b")
-		(property "Reference" "U3"
-			(at 127 83.82 0)
+		(uuid "e128ec88-c26b-41b4-9873-56e19003a992")
+		(property "Reference" "#PWR010"
+			(at 19.05 107.95 0)
+			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2552,18 +5081,19 @@
 				)
 			)
 		)
-		(property "Value" "ESP32-C5-DevKit-V2"
-			(at 127 86.36 0)
+		(property "Value" "GND"
+			(at 21.59 107.9499 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
-		(property "Footprint" "Library:ESP32-C5-DevKit-V2"
-			(at 127.254 137.668 0)
+		(property "Footprint" ""
+			(at 25.4 107.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2574,7 +5104,84 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 127 130.81 0)
+			(at 25.4 107.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 25.4 107.95 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d3802d95-8bec-4708-9ecc-8fb15175bfe9")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "esp32-c5-devkit-v2:ESP32-C5-DevKit-V2")
+		(at 177.8 138.43 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "fb301cdf-7289-49bd-9069-226633c0387b")
+		(property "Reference" "U3"
+			(at 177.8 91.44 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "ESP32-C5-DevKit-V2"
+			(at 177.8 93.98 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:ESP32-C5-DevKit-V2"
+			(at 178.054 145.288 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 177.8 138.43 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2585,7 +5192,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 124.206 148.336 0)
+			(at 175.006 155.956 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2689,6 +5296,85 @@
 			(project "LOCK_EDGE_BASEBOARD"
 				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
 					(reference "U3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 215.9 133.35 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "fc591c1e-bf7e-45fd-8268-fcb85d7bd51b")
+		(property "Reference" "#PWR06"
+			(at 212.09 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_5V0"
+			(at 219.71 133.3499 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 215.9 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 215.9 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 215.9 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1a0f9691-869d-4862-93c3-8db17bbf617e")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR06")
 					(unit 1)
 				)
 			)
