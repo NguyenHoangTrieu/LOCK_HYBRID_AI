@@ -1298,6 +1298,251 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "ina228-breakout:INA228_Breakout"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "INA228_Breakout"
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Library:INA228_Breakout_Socket"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.adafruit.com/product/5832"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Adafruit INA228 I2C 85V 20-bit power monitor breakout (PID 5832), represented as its JP2 1x8 0.1in header: pin order VCC,GND,SCL,SDA,VBUS,VIN-,VIN+,ALRT, verified against Adafruit's published Eagle source (github.com/adafruit/Adafruit-INA228-PCB). Mates with the Library:INA228_Breakout_Socket footprint for direct pin-socket stacking, no wiring."
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "INA228 Adafruit power monitor current sense breakout"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "INA228_Breakout_Socket"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "INA228_Breakout_0_0"
+				(rectangle
+					(start -10.16 7.62)
+					(end 10.16 -7.62)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "INA228_Breakout_1_1"
+				(pin passive line
+					(at -17.78 5.08 0)
+					(length 7.62)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -17.78 2.54 0)
+					(length 7.62)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -17.78 0 0)
+					(length 7.62)
+					(name "SCL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -17.78 -2.54 0)
+					(length 7.62)
+					(name "SDA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 17.78 2.54 180)
+					(length 7.62)
+					(name "VBUS"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 17.78 0 180)
+					(length 7.62)
+					(name "VIN-"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 17.78 -2.54 180)
+					(length 7.62)
+					(name "VIN+"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at -17.78 -5.08 0)
+					(length 7.62)
+					(name "ALRT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:GNDREF"
 			(power global)
 			(pin_numbers
@@ -2340,12 +2585,12 @@
 		)
 	)
 	(no_connect
-		(at 93.98 95.25)
-		(uuid "0a0d0d7b-8d49-4316-90fe-fbd38ee05597")
-	)
-	(no_connect
 		(at 198.12 107.95)
 		(uuid "0e1a13aa-fac2-4f22-a858-a046d8df7139")
+	)
+	(no_connect
+		(at 167.64 66.04)
+		(uuid "16e1d65f-6230-4532-a8a0-71fe3b130e03")
 	)
 	(no_connect
 		(at 93.98 120.65)
@@ -2370,6 +2615,10 @@
 	(no_connect
 		(at 157.48 118.11)
 		(uuid "45644fec-50ac-458c-9e19-c88ead336254")
+	)
+	(no_connect
+		(at 167.64 71.12)
+		(uuid "4ae3780d-5081-45fb-bc0e-ffbc89a6454c")
 	)
 	(no_connect
 		(at 157.48 133.35)
@@ -2400,8 +2649,8 @@
 		(uuid "a1e9bb31-d202-4bf1-8685-0fdd4994a55b")
 	)
 	(no_connect
-		(at 93.98 92.71)
-		(uuid "a638948e-828d-430e-b5cc-b3b4a48800c3")
+		(at 167.64 68.58)
+		(uuid "a63e2200-8289-42a6-8792-60d8b7e54235")
 	)
 	(no_connect
 		(at 198.12 128.27)
@@ -2470,6 +2719,16 @@
 	(no_connect
 		(at 157.48 123.19)
 		(uuid "f6a7775b-c5ab-4f4a-92ed-9be82e54f3a8")
+	)
+	(wire
+		(pts
+			(xy 114.3 73.66) (xy 132.08 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "01b73816-43d2-46df-bdf6-faa610356f0a")
 	)
 	(wire
 		(pts
@@ -2543,6 +2802,16 @@
 	)
 	(wire
 		(pts
+			(xy 93.98 92.71) (xy 114.3 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3030c9f6-a6a8-4db9-82ba-ff2a091e504d")
+	)
+	(wire
+		(pts
 			(xy 93.98 105.41) (xy 114.3 105.41)
 		)
 		(stroke
@@ -2570,6 +2839,16 @@
 			(type default)
 		)
 		(uuid "36bdcb15-d4a0-443d-8952-d2627154044c")
+	)
+	(wire
+		(pts
+			(xy 114.3 68.58) (xy 132.08 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "37343717-458a-4f29-bbf0-be53756059e2")
 	)
 	(wire
 		(pts
@@ -2673,6 +2952,16 @@
 	)
 	(wire
 		(pts
+			(xy 93.98 95.25) (xy 114.3 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "61b22fcf-be05-44f3-8523-1fd1912006de")
+	)
+	(wire
+		(pts
 			(xy 93.98 130.81) (xy 114.3 130.81)
 		)
 		(stroke
@@ -2730,6 +3019,16 @@
 			(type default)
 		)
 		(uuid "7d5e3b88-2a84-47b3-a32f-20b2e59e49d5")
+	)
+	(wire
+		(pts
+			(xy 114.3 71.12) (xy 132.08 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8117b2d4-a54d-4330-a00c-9d6ddc63e088")
 	)
 	(wire
 		(pts
@@ -2823,6 +3122,16 @@
 	)
 	(wire
 		(pts
+			(xy 25.4 133.35) (xy 43.18 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a0646b89-8420-479c-afe6-eb8d24c43f34")
+	)
+	(wire
+		(pts
 			(xy 198.12 125.73) (xy 215.9 125.73)
 		)
 		(stroke
@@ -2850,6 +3159,16 @@
 			(type default)
 		)
 		(uuid "b54fe938-4b18-4f66-966e-cb8e0fe76dcb")
+	)
+	(wire
+		(pts
+			(xy 114.3 66.04) (xy 132.08 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b7f53e7a-0d41-41a0-8ff5-c4a15b551565")
 	)
 	(wire
 		(pts
@@ -3013,6 +3332,16 @@
 	)
 	(wire
 		(pts
+			(xy 114.3 63.5) (xy 132.08 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f77b026f-a01b-45c7-95dc-9acf6f094376")
+	)
+	(wire
+		(pts
 			(xy 31.75 43.18) (xy 48.26 43.18)
 		)
 		(stroke
@@ -3020,16 +3349,6 @@
 			(type default)
 		)
 		(uuid "fa10549f-cddc-4614-a03a-af4e9a9a948a")
-	)
-	(wire
-		(pts
-			(xy 25.4 133.35) (xy 43.18 133.35)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fe1c70f4-0d53-4c8b-8e2a-31d2a4c326e4")
 	)
 	(wire
 		(pts
@@ -3051,6 +3370,16 @@
 		)
 		(uuid "fed96460-a0ba-4c27-b5ae-f801f7e4c242")
 	)
+	(label "TFT_RESET"
+		(at 114.3 118.11 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "00854956-2129-4dc3-99f5-fbca4c970575")
+	)
 	(label "SPI_MISO"
 		(at 215.9 120.65 180)
 		(effects
@@ -3061,7 +3390,7 @@
 		)
 		(uuid "01550c47-c295-44aa-aec3-e9afe6e6fbbb")
 	)
-	(label "RFID_RST"
+	(label "INA_ALRT"
 		(at 114.3 130.81 180)
 		(effects
 			(font
@@ -3069,7 +3398,17 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "1d031963-eff5-4a65-92ba-daa342fe0437")
+		(uuid "03fcd404-97d4-4eb9-a4a8-2e7cbbb6c7c4")
+	)
+	(label "INA_SCL"
+		(at 114.3 68.58 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "169df819-ac4c-4862-ab5f-551c4aaee111")
 	)
 	(label "SPI_SCK"
 		(at 114.3 102.87 180)
@@ -3111,16 +3450,6 @@
 		)
 		(uuid "4d1b252f-206b-4f86-9ab3-4584ad3e0629")
 	)
-	(label "TOUCH_IRQ"
-		(at 114.3 118.11 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "5256d640-c74e-4a29-9240-e9abc3b50ccf")
-	)
 	(label "SPI_MISO"
 		(at 95.25 58.42 180)
 		(effects
@@ -3141,26 +3470,6 @@
 		)
 		(uuid "6d0076af-a33c-4855-8982-7c1897235f4c")
 	)
-	(label "TFT_RESET"
-		(at 114.3 125.73 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "6d2376bd-2f37-44ad-a821-7edaeecc21d9")
-	)
-	(label "TFT_LED"
-		(at 31.75 55.88 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "6e69d7a9-1f12-49d6-a3fa-b028b1f1ade5")
-	)
 	(label "SPI_MOSI"
 		(at 95.25 55.88 180)
 		(effects
@@ -3170,6 +3479,16 @@
 			(justify right bottom)
 		)
 		(uuid "706e4748-1726-427d-8151-2be428e54417")
+	)
+	(label "INA_ALRT"
+		(at 114.3 73.66 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "706edbb1-4dc6-4fbf-a3b5-3e2e6664a66d")
 	)
 	(label "SPI_MISO"
 		(at 114.3 107.95 180)
@@ -3191,16 +3510,6 @@
 		)
 		(uuid "76307eb8-4ea2-4b2b-9ee2-4fe9782422aa")
 	)
-	(label "RFID_IRQ"
-		(at 25.4 128.27 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "77e4dd49-3df5-4d59-9308-063bc2a362f6")
-	)
 	(label "SPI_SCK"
 		(at 95.25 60.96 180)
 		(effects
@@ -3210,6 +3519,16 @@
 			(justify right bottom)
 		)
 		(uuid "7d158c55-c578-4e73-b831-2c713c0f7a9e")
+	)
+	(label "TOUCH_CS"
+		(at 114.3 125.73 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "80c05774-565e-4384-bb92-858360078e02")
 	)
 	(label "RFID_CS"
 		(at 114.3 115.57 180)
@@ -3291,6 +3610,16 @@
 		)
 		(uuid "9c27b9a5-1489-4a05-a63a-3e0da7850b5b")
 	)
+	(label "RFID_IRQ"
+		(at 25.4 133.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9c7bec61-550f-4129-9d3c-504392c2dae6")
+	)
 	(label "SERVO_PWM"
 		(at 114.3 113.03 180)
 		(effects
@@ -3301,6 +3630,16 @@
 		)
 		(uuid "9c98a2ed-9b9a-4a21-bb84-0530c94cd3a5")
 	)
+	(label "RFID_RST"
+		(at 25.4 128.27 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9df0b709-43b0-44cb-880d-e025ba30471e")
+	)
 	(label "SPI_MISO"
 		(at 31.75 43.18 0)
 		(effects
@@ -3310,16 +3649,6 @@
 			(justify left bottom)
 		)
 		(uuid "9f33d5ec-37d4-4ad7-9529-6a03a6270ab7")
-	)
-	(label "TFT_CS"
-		(at 114.3 128.27 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a3b2965b-212a-4348-9193-7945487d0f51")
 	)
 	(label "SPI_MOSI"
 		(at 114.3 105.41 180)
@@ -3361,6 +3690,16 @@
 		)
 		(uuid "b1f9c485-4397-438a-a0f6-c6a199f6a80d")
 	)
+	(label "INA_SDA"
+		(at 114.3 95.25 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "b851ef8f-35c1-48ed-bf35-63bdcdcb6c99")
+	)
 	(label "SPI_MISO"
 		(at 114.3 48.26 0)
 		(effects
@@ -3370,6 +3709,26 @@
 			(justify left bottom)
 		)
 		(uuid "bc30ab9b-954a-486d-9d0c-6bce2f27bed6")
+	)
+	(label "TFT_CS"
+		(at 114.3 110.49 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "c76c5b23-44d1-44ce-995e-eb6827217890")
+	)
+	(label "INA_SCL"
+		(at 114.3 92.71 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "cdce5666-11f8-450f-9cf9-88843b3dd29b")
 	)
 	(label "SD_CS"
 		(at 25.4 130.81 0)
@@ -3421,15 +3780,15 @@
 		)
 		(uuid "db1ff8f5-f54d-404e-a853-e25e25d0f9a4")
 	)
-	(label "TFT_LED"
-		(at 114.3 110.49 180)
+	(label "TOUCH_IRQ"
+		(at 114.3 128.27 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "e8274109-8159-438a-b6fa-79a24fe9ad91")
+		(uuid "e16e7269-b296-458f-8d90-28671fe1162a")
 	)
 	(label "ESP32_CS"
 		(at 25.4 135.89 0)
@@ -3461,15 +3820,113 @@
 		)
 		(uuid "f549fbd9-f9bf-4da4-a48d-55a3b73fea4b")
 	)
-	(label "TOUCH_CS"
-		(at 25.4 133.35 0)
+	(label "INA_SDA"
+		(at 114.3 71.12 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "f7209c88-235d-418b-a6c2-f7114ee4f876")
+		(uuid "ff830b37-223d-4a48-93ec-44000f88058a")
+	)
+	(symbol
+		(lib_id "ina228-breakout:INA228_Breakout")
+		(at 149.86 68.58 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2376c145-190c-473d-a4ac-f2c9c1d9ff32")
+		(property "Reference" "J3"
+			(at 149.86 55.88 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "INA228_Breakout"
+			(at 149.86 58.42 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:INA228_Breakout_Socket"
+			(at 149.86 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.adafruit.com/product/5832"
+			(at 149.86 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Adafruit INA228 I2C 85V 20-bit power monitor breakout (PID 5832), represented as its JP2 1x8 0.1in header: pin order VCC,GND,SCL,SDA,VBUS,VIN-,VIN+,ALRT, verified against Adafruit's published Eagle source (github.com/adafruit/Adafruit-INA228-PCB). Mates with the Library:INA228_Breakout_Socket footprint for direct pin-socket stacking, no wiring."
+			(at 149.86 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "7"
+			(uuid "f021c393-bf68-463a-b05c-1a36af1f4435")
+		)
+		(pin "6"
+			(uuid "cbe65db5-5eae-422a-b3f0-7bdb2844954c")
+		)
+		(pin "5"
+			(uuid "426aee0f-79ed-4d2e-bcf8-1d65f78913ff")
+		)
+		(pin "4"
+			(uuid "908da837-1590-43f5-ab07-2c4615379864")
+		)
+		(pin "3"
+			(uuid "5b734dd7-5e5c-4378-9d1c-4219cb29a93b")
+		)
+		(pin "8"
+			(uuid "5138f9b0-07c7-4541-aea1-dabb61ec1657")
+		)
+		(pin "2"
+			(uuid "684ae64e-c8c0-43ec-9a21-cc52d01fe74f")
+		)
+		(pin "1"
+			(uuid "da3b643e-d582-44e7-8c73-9ef5418acc72")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "J3")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "power:GNDREF")
@@ -3624,6 +4081,85 @@
 			(project "LOCK_EDGE_BASEBOARD"
 				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
 					(reference "#PWR014")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 31.75 55.88 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3e1b0930-f433-4ff6-9d53-f6201db03de6")
+		(property "Reference" "#PWR022"
+			(at 35.56 55.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_3V3"
+			(at 27.94 55.8799 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 31.75 55.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 31.75 55.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 31.75 55.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "344d7058-a93c-4117-9a53-fdb382d87c58")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR022")
 					(unit 1)
 				)
 			)
@@ -4025,6 +4561,85 @@
 			(project "LOCK_EDGE_BASEBOARD"
 				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
 					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDREF")
+		(at 114.3 66.04 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6794a4f4-da44-4505-9b6b-40f4c0dce64d")
+		(property "Reference" "#PWR021"
+			(at 107.95 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 110.49 66.0399 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 114.3 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 114.3 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
+			(at 114.3 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "54d882b0-e56d-4baa-a272-09aa5f8db838")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR021")
 					(unit 1)
 				)
 			)
@@ -5053,6 +5668,85 @@
 			(project "LOCK_EDGE_BASEBOARD"
 				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
 					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:VDD")
+		(at 114.3 63.5 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "dc06cede-c0be-4bb1-ba51-9905ac120977")
+		(property "Reference" "#PWR020"
+			(at 118.11 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "VDD_3V3"
+			(at 110.49 63.4999 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 114.3 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 114.3 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"VDD\""
+			(at 114.3 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "09ab2019-243c-42c6-8034-15573d0bafa7")
+		)
+		(instances
+			(project "LOCK_EDGE_BASEBOARD"
+				(path "/49e86503-36f1-4a47-b642-511c3bd84c94"
+					(reference "#PWR020")
 					(unit 1)
 				)
 			)
