@@ -5,5 +5,4 @@
 	(lib (name "arduino-header") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/arduino_header.kicad_sym") (options "") (descr "Arduino Uno-compatible pin header (power/analog/digital rows only, no ICSP, no board-outline artwork) - pad layout from github.com/Alarm-Siren/arduino-kicad-library, trimmed down to just the connector"))
 	(lib (name "rfid-rc522") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/rfid_rc522.kicad_sym") (options "") (descr "13.56MHz RFID-RC522 (MFRC522) module, SPI, 8-pin header - self-drawn"))
 	(lib (name "servo-motor-3pin") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/servo_motor_3pin.kicad_sym") (options "") (descr "3-pin 2.54mm hobby servo header (SIG/VCC/GND) - self-drawn"))
-	(lib (name "ina228-breakout") (type "KiCad") (uri "${KIPRJMOD}/Library/schematic/ina228_breakout.kicad_sym") (options "") (descr "Adafruit INA228 I2C 85V 20-bit power monitor breakout (PID 5832), JP2 1x8 header - self-drawn against Adafruit's published Eagle source"))
 )
