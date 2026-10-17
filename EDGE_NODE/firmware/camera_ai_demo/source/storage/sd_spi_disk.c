@@ -28,16 +28,13 @@
 #include "sd_spi_disk.h"
 #include "ff.h" /* Must come before diskio.h - defines BYTE/UINT/LBA_t/... that diskio.h's prototypes need. */
 #include "diskio.h"
+#include "app.h"
 #include "fsl_common.h" /* DWT, SystemCoreClock - see SDCARD_SPI_Exchange()'s deadline check below. */
 #include "fsl_debug_console.h"
+#include "fsl_gpio.h"
 #include "fsl_lpspi.h"
 #include "fsl_sdspi.h"
 #include "spi1_bus.h"
-
-/* Only needed here for SDCARD_SPI_CsActivePolarity()'s
- * LPSPI_SetAllPcsPolarity() call - everything else routes through
- * spi1_bus.h, shared with the LCD/touch controller. */
-#define SD_SPI_BASEADDR LPSPI1
 
 /* Operating-speed cap, not the mandatory 400kHz identification speed
  * (set separately inside SDSPI_Init() itself). Confirmed on real
@@ -60,6 +57,7 @@ static bool s_initTimedOut;
 /* True only while disk_initialize() -> SDSPI_Init() is actually running -
  * see SDCARD_SPI_Exchange()'s comment for why this matters. */
 static bool s_initInProgress;
+static sdspi_cs_active_polarity_t s_csActivePolarity = kSDSPI_CsActivePolarityLow;
 
 /* -------------------------------------------------------------------- */
 /* sdspi_host_t callbacks - LPSPI1 hardware SPI, see the file comment.   */
@@ -71,6 +69,7 @@ static void SDCARD_SPI_Init(void)
      * the bus. SDSPI_Init() immediately calls setFrequency() anyway, so
      * the shared module's own baseline baud rate doesn't matter here. */
     SPI1_BUS_Init();
+    GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
 
     /* DWT is already enabled elsewhere (AI_MODEL_Init()), but enable it
      * defensively here too so this file doesn't depend on that ordering -
@@ -85,6 +84,16 @@ static void SDCARD_SPI_Init(void)
 static status_t SDCARD_SPI_SetFrequency(uint32_t frequency)
 {
     return (SPI1_BUS_SetBaudRate(frequency) == 0U) ? kStatus_Fail : kStatus_Success;
+}
+
+static void SDCARD_SPI_CsActivePolarity(sdspi_cs_active_polarity_t polarity)
+{
+    s_csActivePolarity = polarity;
+    if (polarity == kSDSPI_CsActivePolarityHigh)
+    {
+        /* During power-up dummy clocks phase in SDSPI_Init(), hold CS high */
+        GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    }
 }
 
 static status_t SDCARD_SPI_Exchange(uint8_t *in, uint8_t *out, uint32_t size)
@@ -106,16 +115,29 @@ static status_t SDCARD_SPI_Exchange(uint8_t *in, uint8_t *out, uint32_t size)
                    SD_SPI_INIT_TIMEOUT_MS);
         }
         s_initTimedOut = true;
+        GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
         return kStatus_Fail;
     }
 
-    return SPI1_BUS_TransferBlocking(in, out, size, kLPSPI_MasterPcs0 | kLPSPI_MasterPcsContinuous);
+    if (s_csActivePolarity == kSDSPI_CsActivePolarityLow)
+    {
+        GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 0U);
+    }
+    else
+    {
+        GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    }
+
+    status_t status = SPI1_BUS_TransferBlocking(in, out, size, kLPSPI_MasterPcs1 | kLPSPI_MasterPcsContinuous);
+
+    if (s_csActivePolarity == kSDSPI_CsActivePolarityLow)
+    {
+        GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    }
+
+    return status;
 }
 
-static void SDCARD_SPI_CsActivePolarity(sdspi_cs_active_polarity_t polarity)
-{
-    LPSPI_SetAllPcsPolarity(SD_SPI_BASEADDR, (polarity == kSDSPI_CsActivePolarityLow) ? kLPSPI_Pcs0ActiveLow : 0U);
-}
 
 /* -------------------------------------------------------------------- */
 /* diskio.h - single physical drive 0, see the file comment.            */
@@ -158,6 +180,9 @@ DSTATUS disk_initialize(BYTE pdrv)
     SPI1_BUS_Lock();
 #endif
     s_cardReady      = (SDSPI_Init(&s_card) == kStatus_Success);
+    GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    uint8_t dummy = 0xFF;
+    (void)SPI1_BUS_TransferBlocking(&dummy, NULL, 1U, kLPSPI_MasterPcs1 | kLPSPI_MasterPcsContinuous);
 #ifdef DUALCORE_RTOS
     SPI1_BUS_Unlock();
 #endif
@@ -189,6 +214,9 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count)
 #endif
     (void)SPI1_BUS_SetBaudRate(SD_SPI_OPERATING_BAUDRATE);
     DRESULT result = (SDSPI_ReadBlocks(&s_card, buff, sector, count) == kStatus_Success) ? RES_OK : RES_ERROR;
+    GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    uint8_t dummyByte = 0xFF;
+    (void)SPI1_BUS_TransferBlocking(&dummyByte, NULL, 1U, kLPSPI_MasterPcs1 | kLPSPI_MasterPcsContinuous);
 #ifdef DUALCORE_RTOS
     SPI1_BUS_Unlock();
 #endif
@@ -207,6 +235,9 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count)
 #endif
     (void)SPI1_BUS_SetBaudRate(SD_SPI_OPERATING_BAUDRATE); /* See disk_read()'s comment above. */
     DRESULT result = (SDSPI_WriteBlocks(&s_card, (uint8_t *)buff, sector, count) == kStatus_Success) ? RES_OK : RES_ERROR;
+    GPIO_PinWrite(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, 1U);
+    uint8_t dummyByte = 0xFF;
+    (void)SPI1_BUS_TransferBlocking(&dummyByte, NULL, 1U, kLPSPI_MasterPcs1 | kLPSPI_MasterPcsContinuous);
 #ifdef DUALCORE_RTOS
     SPI1_BUS_Unlock();
 #endif

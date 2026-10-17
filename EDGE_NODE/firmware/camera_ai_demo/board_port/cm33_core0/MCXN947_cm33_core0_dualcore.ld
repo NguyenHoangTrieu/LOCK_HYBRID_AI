@@ -51,14 +51,12 @@ MEMORY
    * match m_shared's ORIGIN/LENGTH here exactly). Widened again in Stage 5
    * (see the file header comment) at m_shared's expense, for the NPU
    * tensor arena. */
-  m_data                (RW)  : ORIGIN = 0x20000000, LENGTH = 0x00028000 - RPMSG_SHMEM_SIZE
-  /* NEW: dual-core shared RAM (camera frame buffer + result struct - see
-   * source/shared/ipc_layout.h). Ends exactly at 0x2004E000, the start of
-   * core1's own reserved region - core1 accesses this range via
-   * fixed-address pointers, it does not need its own linker-level MEMORY
-   * entry for it (see ipc_layout.h's header comment). */
-  m_shared              (RW)  : ORIGIN = 0x20028000, LENGTH = 0x00026000
-  rpmsg_sh_mem          (RW)  : ORIGIN = 0x2004E000 - RPMSG_SHMEM_SIZE, LENGTH = RPMSG_SHMEM_SIZE
+  m_data                (RW)  : ORIGIN = 0x20000000, LENGTH = 0x00042000 - RPMSG_SHMEM_SIZE
+  /* Dual-core shared RAM (camera frame buffer 320x240 RGB565 + result struct).
+   * Placed right after core0's m_data (0x20042000, length 0x26000 = 152KB).
+   * Fits within SRAM0..7 (ends at 0x20068000). */
+  m_shared              (RW)  : ORIGIN = 0x20042000, LENGTH = 0x00026000
+  rpmsg_sh_mem          (RW)  : ORIGIN = 0x20068000 - RPMSG_SHMEM_SIZE, LENGTH = RPMSG_SHMEM_SIZE
   m_flash1              (RX)  : ORIGIN = 0x00100000, LENGTH = 0x00100000
   m_sramx               (RW)  : ORIGIN = 0x04000000, LENGTH = 0x00018000
   m_flash_config        (RX)  : ORIGIN = 0x80000400, LENGTH = 0x00000400
@@ -264,4 +262,10 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
   ASSERT(__StackLimit >= __HeapLimit, "region m_data overflowed with stack and heap")
+  
+  .model :
+  {
+    *(.model)
+    *(.model*)
+  } > m_flash1
 }

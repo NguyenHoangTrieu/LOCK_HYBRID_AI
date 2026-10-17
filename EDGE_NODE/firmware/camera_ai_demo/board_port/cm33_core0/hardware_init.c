@@ -210,6 +210,7 @@ void BOARD_InitHardware(void)
     BOARD_InitFlexioPins();
 #endif
     BOARD_InitSdCardPins();
+    BOARD_InitBaseboardPeripheralPins();
 }
 
 #ifdef CORE1_IMAGE_COPY_TO_RAM

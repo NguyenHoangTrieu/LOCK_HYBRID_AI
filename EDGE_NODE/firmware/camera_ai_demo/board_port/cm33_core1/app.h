@@ -32,36 +32,85 @@
 #define DEMO_PANEL_HEIGHT 240U
 
 /*******************************************************************************
- * Arduino header (current default). Panel is a 2.4" SPI TFT module
- * (ILI9341-family) with an onboard microSD slot and XPT2046 touch
- * controller - see README.md. SCK/SDI/SDO ride hardware LPSPI1, SHARED
- * with the microSD slot (Stage 4) - see source/spi1_bus.h. Only LCD_DC/
- * CS/RST/BLK are plain GPIO, on the Arduino header (A2..A5).
+ * Arduino header - baseboard PCB schematic (LOCK_EDGE_BASEBOARD):
+ *  - Shared LPSPI1 bus: SCK=D13 (P0_25), MOSI=D11 (P0_24), MISO=D12 (P0_26)
+ *  - TFT LCD: CS=D10 (P0_27), DC=D5 (P1_21), RST=D7 (P0_31), LED=3.3V
+ *  - Touch (XPT2046): CS=D4 (P0_30), IRQ=D3 (P1_23)
+ *  - SD Card: CS=A3 (P0_22)
+ *  - RFID-RC522: CS=D8 (P0_28), RST=A2 (P0_14), IRQ=A4 (P0_15)
+ *  - ESP32: CS=A5 (P0_23)
+ *  - INA228: SCL=SCL (P4_1), SDA=SDA (P4_0), ALRT=D2 (P0_29)
+ *  - Servo: PWM=D9 (P0_10)
  ******************************************************************************/
-/* DC lives on GPIO1 (Arduino D3) instead of GPIO0 here - see WORKLOG.md/
- * KNOWLEDGE.md §9 (core1 needs an explicit PCNS grant per pin; this move
- * predates finding that and turned out not to be the actual fix, but is
- * confirmed working, so left as-is). */
-#define DEMO_LCD_DC_GPIO GPIO1
-#define DEMO_LCD_DC_PIN  23U /* Arduino D3 */
-#define DEMO_LCD_DC_PORT PORT1 /* pin_mux.c is shared with the legacy build, which keeps DC on PORT0 */
-#define DEMO_LCD_CS_GPIO GPIO0
-#define DEMO_LCD_CS_PIN  22U /* Arduino A3 */
-#define DEMO_LCD_RST_GPIO GPIO0
-#define DEMO_LCD_RST_PIN  15U /* Arduino A4 */
+#define DEMO_LCD_DC_GPIO  GPIO1
+#define DEMO_LCD_DC_PIN   21U /* Arduino D5, P1_21 */
+#define DEMO_LCD_DC_PORT  PORT1
 
-#define DEMO_LCD_BLK_GPIO GPIO0
-#define DEMO_LCD_BLK_PIN  23U /* Arduino A5 - panel's LED pin, safe default even if unconnected */
+#define DEMO_LCD_CS_GPIO  GPIO0
+#define DEMO_LCD_CS_PIN   27U /* Arduino D10, P0_27 */
+#define DEMO_LCD_CS_PORT  PORT0
+
+#define DEMO_LCD_RST_GPIO GPIO0
+#define DEMO_LCD_RST_PIN  31U /* Arduino D7, P0_31 */
+#define DEMO_LCD_RST_PORT PORT0
+
+/* TFT backlight LED is hardwired to VDD_3V3 on the baseboard PCB */
+#define DEMO_LCD_HAS_BLK_PIN 0
 
 /*******************************************************************************
- * Touch controller (XPT2046) pins - needed because pin_mux.c's shared
- * BOARD_InitTouchPins() references these macros. Not wired into any core1
- * task yet, same as the legacy build - see README.md.
+ * Touch controller (XPT2046) - source/display/touch_xpt2046.c
  ******************************************************************************/
-#define DEMO_TOUCH_CS_GPIO GPIO0
-#define DEMO_TOUCH_CS_PIN  10U /* Arduino D9 */
-#define DEMO_TOUCH_IRQ_GPIO GPIO0
-#define DEMO_TOUCH_IRQ_PIN  28U /* Arduino D8 - input, active low when pressed */
+#define DEMO_TOUCH_CS_GPIO  GPIO0
+#define DEMO_TOUCH_CS_PIN   30U /* Arduino D4, P0_30 */
+#define DEMO_TOUCH_CS_PORT  PORT0
+
+#define DEMO_TOUCH_IRQ_GPIO GPIO1
+#define DEMO_TOUCH_IRQ_PIN  23U /* Arduino D3, P1_23 - input, active low */
+#define DEMO_TOUCH_IRQ_PORT PORT1
+
+/*******************************************************************************
+ * MicroSD card (TFT SPI slot) - source/storage/sd_spi_disk.c
+ ******************************************************************************/
+#define DEMO_SD_CS_GPIO     GPIO0
+#define DEMO_SD_CS_PIN      22U /* Arduino A3, P0_22 */
+#define DEMO_SD_CS_PORT     PORT0
+
+/*******************************************************************************
+ * RFID-RC522 reader
+ ******************************************************************************/
+#define DEMO_RFID_CS_GPIO   GPIO0
+#define DEMO_RFID_CS_PIN    28U /* Arduino D8, P0_28 */
+#define DEMO_RFID_CS_PORT   PORT0
+
+#define DEMO_RFID_RST_GPIO  GPIO0
+#define DEMO_RFID_RST_PIN   14U /* Arduino A2, P0_14 */
+#define DEMO_RFID_RST_PORT  PORT0
+
+#define DEMO_RFID_IRQ_GPIO  GPIO0
+#define DEMO_RFID_IRQ_PIN   15U /* Arduino A4, P0_15 */
+#define DEMO_RFID_IRQ_PORT  PORT0
+
+/*******************************************************************************
+ * ESP32-C5 Slave Select
+ ******************************************************************************/
+#define DEMO_ESP32_CS_GPIO  GPIO0
+#define DEMO_ESP32_CS_PIN   23U /* Arduino A5, P0_23 */
+#define DEMO_ESP32_CS_PORT  PORT0
+
+/*******************************************************************************
+ * INA228 Power Monitor Alert & I2C
+ ******************************************************************************/
+#define DEMO_INA_ALRT_GPIO  GPIO0
+#define DEMO_INA_ALRT_PIN   29U /* Arduino D2, P0_29 */
+#define DEMO_INA_ALRT_PORT  PORT0
+
+/*******************************************************************************
+ * Servo Motor (PWM control)
+ ******************************************************************************/
+#define DEMO_SERVO_PWM_GPIO GPIO0
+#define DEMO_SERVO_PWM_PIN  10U /* Arduino D9, P0_10 */
+#define DEMO_SERVO_PWM_PORT PORT0
+
 
 /*******************************************************************************
  * Prototypes

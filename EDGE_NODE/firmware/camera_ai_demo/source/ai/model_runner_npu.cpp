@@ -1,29 +1,13 @@
 /*
  * model_runner_npu.cpp - alternate model_runner.h implementation using
  * this chip's Neutron NPU instead of the CPU+CMSIS-NN path in
- * model_runner.cpp. Selected at build time by AI_MODEL_USE_NPU. See
- * WORKLOG.md's "NPU (Neutron) plan" for the full story.
+ * model_runner.cpp. Selected at build time by AI_MODEL_USE_NPU.
  *
- * Bypasses the Edge Impulse SDK entirely - ei_run_classifier() has no way
- * to register the NEUTRON_GRAPH custom TFLM op - so this talks to TFLite
- * Micro directly via NXP's own middleware/eiq/tensorflow-lite tree (a
- * different TFLM snapshot than Edge Impulse's own vendored copy - the two
- * must not be mixed in one translation unit).
- *
- * Model: neutron/tflite_learn_1095726_3_npu.h, a single-class `face` FOMO
- * detector, run through `neutron_converter --target mcxn94x`. 31 of 33
- * ops folded into one NEUTRON_GRAPH custom op; Slice and Softmax stayed
- * regular TFLM ops (Slice trims the NPU's padded 4-channel output down to
- * the real 2 channels).
- *
- * Preprocessing is the same nearest-neighbor resize model_runner.cpp
- * uses, writing straight into an int8 NHWC tensor. Postprocessing (FOMO
- * grid decode) is hand-ported from Edge Impulse's own
- * process_fomo_i8()/ei_handle_cube()/process_cubes(), since this path
- * skips ei_run_classifier() and its postprocessing. Output tensor is
- * INT8[1,9,9,2] - a 9x9 grid, channel 0 = background (skipped), channel 1
- * = `face`. Adjacent same-class cells merge into one box, same as EI's
- * ei_cube_check_overlap(), with fixed-size arrays instead of std::vector.
+ * Model: neutron/ultraface_slim_ultraslim_npu16_tflite.h, an UltraFace UltraSlim
+ * face detector (128x128x3 INT8 input), converted for NXP Neutron NPU.
+ * Output tensor: [1, 172, 6] INT8 representing 172 prior anchors:
+ * [no_face_score, face_score, left, top, right, bottom].
+ * Post-processing: score thresholding + IoU Non-Maximum Suppression (NMS).
  */
 #include "model_runner.h"
 #include "fsl_debug_console.h"
@@ -34,126 +18,32 @@
 #include "tensorflow/lite/micro/kernels/neutron/neutron.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
-#include "neutron/tflite_learn_1095726_3_npu.h"
+#include "neutron/ultraface_slim_ultraslim_npu16_tflite.h"
+#include "neutron/ultraface_slim_ultraslim_npu16_tflite_info.h"
+#include "neutron/couple_COCO_128_128_rgb.h"
 
-/* Model's own fixed shapes/labels, hard-coded to match this exact export
- * (not read from EI's model_metadata.h - that's EI-SDK specific). Grid =
- * input / 8, FOMO's fixed stride for this backbone. */
-#define NPU_MODEL_INPUT_WIDTH 72U
-#define NPU_MODEL_INPUT_HEIGHT 72U
-#define NPU_MODEL_GRID_WIDTH 9U
-#define NPU_MODEL_GRID_HEIGHT 9U
-#define NPU_MODEL_CLASS_COUNT 1U /* +1 implicit background channel in the raw tensor */
-/* Raised from the Edge Impulse export's calibrated default (0.5) after
- * real hardware testing showed frequent false "face" detections on plain
- * walls/floors in the 0.5-0.65 range - a real accuracy limit of this
- * model on unfamiliar scenes, not a pipeline bug. Deliberate
- * fewer-false-positives tradeoff, not a fix. */
-#define NPU_MODEL_DETECTION_THRESHOLD 0.65f
+#define NPU_MODEL_INPUT_WIDTH  128U
+#define NPU_MODEL_INPUT_HEIGHT 128U
+#define NPU_MODEL_NUM_PRIORS   172U
+#define NPU_MODEL_DETECTION_THRESHOLD 0.58f
+#define NPU_MODEL_NMS_THRESHOLD       0.45f
 
-static const char *const s_labels[NPU_MODEL_CLASS_COUNT] = {"face"};
-
-/* Sized over the converter's own NeutronGraph report (~93.6KB) plus
- * ~28% margin for Slice/Softmax intermediates and TFLM bookkeeping.
- * Comfortably fits m_data alongside the 153,600-byte frame buffer, with
- * ~43KB spare - see WORKLOG.md for the budget math and the earlier model
- * that didn't fit at all. If AllocateTensors() fails (logged below),
- * there's headroom here to grow it. */
-constexpr int kTensorArenaSize = 120 * 1024;
+constexpr int kTensorArenaSize = 244 * 1024;
 static uint8_t s_tensorArena[kTensorArenaSize] __attribute__((aligned(16)));
 
 static const tflite::Model *s_model = nullptr;
 static tflite::MicroInterpreter *s_interpreter = nullptr;
 
-/* One detected grid cell before merging into a box - mirrors EI's
- * ei_classifier_cube_t, fixed-size instead of heap/vector-allocated. */
 typedef struct
 {
-    uint16_t x, y;     /* grid cell coords, not pixels */
-    uint16_t width, height; /* in grid cells */
-    float confidence;
-    const char *label;
-} npu_cube_t;
+    float score;
+    float xmin, ymin, xmax, ymax;
+} candidate_box_t;
 
-static npu_cube_t s_cubes[NPU_MODEL_GRID_WIDTH * NPU_MODEL_GRID_HEIGHT];
-static uint32_t s_cubeCount;
+#define MAX_CANDIDATES 32
+static candidate_box_t s_candidates[MAX_CANDIDATES];
+static uint32_t s_candidateCount;
 
-/* Ported from ei_cube_check_overlap() (ei_postprocessing_common.h) - if
- * (x,y,w,h) overlaps cube c (same class, checked by caller), grow c to
- * cover both and return true; otherwise return false untouched. */
-static bool NPU_CubeCheckOverlap(npu_cube_t *c, uint16_t x, uint16_t y, uint16_t width, uint16_t height,
-                                 float confidence)
-{
-    bool isOverlapping = !((c->x + c->width < x) || (c->y + c->height < y) || (c->x > x + width) ||
-                           (c->y > y + height));
-    if (!isOverlapping)
-    {
-        return false;
-    }
-
-    if (x < c->x)
-    {
-        c->width += c->x - x;
-        c->x = x;
-    }
-    if (y < c->y)
-    {
-        c->height += c->y - y;
-        c->y = y;
-    }
-    if ((x + width) > (c->x + c->width))
-    {
-        c->width += (x + width) - (c->x + c->width);
-    }
-    if ((y + height) > (c->y + c->height))
-    {
-        c->height += (y + height) - (c->y + c->height);
-    }
-    if (confidence > c->confidence)
-    {
-        c->confidence = confidence;
-    }
-    return true;
-}
-
-/* Ported from ei_handle_cube() - single-cell detection, merged into an
- * existing same-class cube if adjacent/overlapping, otherwise a new
- * 1x1 cube. Silently drops detections past the fixed array size (would
- * only happen with a much bigger/denser grid than this model has). */
-static void NPU_HandleCube(uint16_t x, uint16_t y, float confidence, const char *label)
-{
-    if (confidence < NPU_MODEL_DETECTION_THRESHOLD)
-    {
-        return;
-    }
-
-    for (uint32_t i = 0; i < s_cubeCount; i++)
-    {
-        if (s_cubes[i].label != label)
-        {
-            continue;
-        }
-        if (NPU_CubeCheckOverlap(&s_cubes[i], x, y, 1U, 1U, confidence))
-        {
-            return;
-        }
-    }
-
-    if (s_cubeCount < (sizeof(s_cubes) / sizeof(s_cubes[0])))
-    {
-        s_cubes[s_cubeCount].x = x;
-        s_cubes[s_cubeCount].y = y;
-        s_cubes[s_cubeCount].width = 1U;
-        s_cubes[s_cubeCount].height = 1U;
-        s_cubes[s_cubeCount].confidence = confidence;
-        s_cubes[s_cubeCount].label = label;
-        s_cubeCount++;
-    }
-}
-
-/* Same DWT cycle-counter timing as model_runner.cpp's AI_MODEL_InitTiming()
- * - kept identical so the two paths' "total classifier time" prints are
- * directly comparable (see WORKLOG.md "NPU (Neutron) plan" Phase 6). */
 static void AI_MODEL_InitTiming(void)
 {
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -161,11 +51,27 @@ static void AI_MODEL_InitTiming(void)
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
+static int8_t s_inputLut[256];
+
+static void InitInputLut(float scale, int32_t zp)
+{
+    float stdVal = (float)ULTRAFACE_INPUT_STD;
+    float meanVal = (float)ULTRAFACE_INPUT_MEAN;
+    for (int i = 0; i < 256; i++)
+    {
+        float real = ((float)i - meanVal) / stdVal;
+        int32_t q = (int32_t)roundf(real / scale) + zp;
+        if (q < -128) q = -128;
+        if (q > 127) q = 127;
+        s_inputLut[i] = (int8_t)q;
+    }
+}
+
 extern "C" void AI_MODEL_Init(void)
 {
     AI_MODEL_InitTiming();
 
-    s_model = tflite::GetModel(model_data);
+    s_model = tflite::GetModel(ultraface_data);
     if (s_model->version() != TFLITE_SCHEMA_VERSION)
     {
         PRINTF("AI_MODEL_Init: NPU model schema version %d != supported %d\r\n", (int)s_model->version(),
@@ -173,30 +79,168 @@ extern "C" void AI_MODEL_Init(void)
         return;
     }
 
-    /* Op resolver exactly as suggested in the comment neutron_converter
-     * itself generated at the top of tflite_learn_1095726_3_npu.h - one
-     * more op (Slice) than the earlier 3-class model needed, see the
-     * file-level comment above for why. */
-    static tflite::MicroMutableOpResolver<3> s_opResolver;
+    static tflite::MicroMutableOpResolver<12> s_opResolver;
+    s_opResolver.AddCustom(tflite::GetString_NEUTRON_GRAPH(), tflite::Register_NEUTRON_GRAPH());
+    s_opResolver.AddPad();
+    s_opResolver.AddConcatenation();
+    s_opResolver.AddAdd();
+    s_opResolver.AddRelu();
+    s_opResolver.AddSub();
     s_opResolver.AddSlice();
     s_opResolver.AddSoftmax();
-    s_opResolver.AddCustom(tflite::GetString_NEUTRON_GRAPH(), tflite::Register_NEUTRON_GRAPH());
+    s_opResolver.AddQuantize();
+    s_opResolver.AddDequantize();
+    s_opResolver.AddMul();
+    s_opResolver.AddExp();
 
     static tflite::MicroInterpreter s_staticInterpreter(s_model, s_opResolver, s_tensorArena, kTensorArenaSize);
     s_interpreter = &s_staticInterpreter;
 
     if (s_interpreter->AllocateTensors() != kTfLiteOk)
     {
-        PRINTF("AI_MODEL_Init: AllocateTensors() failed - kTensorArenaSize (%d bytes) is too small, "
-               "bump it and rebuild\r\n",
+        PRINTF("AI_MODEL_Init: AllocateTensors() failed - kTensorArenaSize (%d bytes) is too small\r\n",
                kTensorArenaSize);
         s_interpreter = nullptr;
         return;
     }
 
-    PRINTF("AI_MODEL_Init: Neutron NPU face detector ready (%dx%d input, %d class(es), arena used %u/%u bytes)\r\n",
-           NPU_MODEL_INPUT_WIDTH, NPU_MODEL_INPUT_HEIGHT, (int)NPU_MODEL_CLASS_COUNT,
+    TfLiteTensor *inT = s_interpreter->input(0);
+    TfLiteTensor *outT = s_interpreter->output(0);
+    PRINTF("AI_MODEL_Init: UltraFace UltraSlim NPU face detector ready (%dx%d input, arena used %u/%u bytes)\r\n",
+           NPU_MODEL_INPUT_WIDTH, NPU_MODEL_INPUT_HEIGHT,
            (unsigned)s_interpreter->arena_used_bytes(), (unsigned)kTensorArenaSize);
+    PRINTF("AI_MODEL_Init: in scale=%d/10000 zp=%d | out scale=%d/10000 zp=%d\r\n",
+           inT ? (int)(inT->params.scale * 10000.0f) : 0, inT ? inT->params.zero_point : 0,
+           outT ? (int)(outT->params.scale * 10000.0f) : 0, outT ? outT->params.zero_point : 0);
+
+    /* Self-test with known MS COCO couple test image */
+    InitInputLut(inT->params.scale <= 0.0f ? 0.0078125f : inT->params.scale, inT->params.zero_point);
+    int8_t *inData = inT->data.int8;
+    for (size_t i = 0; i < 128U * 128U * 3U; i++)
+    {
+        inData[i] = s_inputLut[couple_COCO_128_128_rgb_data[i]];
+    }
+    TfLiteStatus testInv = s_interpreter->Invoke();
+    const int8_t *testOut = outT->data.int8;
+    float testScale = outT->params.scale <= 0.0f ? ULTRAFACE_OUTPUT_SCALE : outT->params.scale;
+    int32_t testZp = outT->params.scale <= 0.0f ? (int32_t)ULTRAFACE_OUTPUT_ZERO_POINT : outT->params.zero_point;
+    float testMaxScore = -1.0f;
+    uint32_t testFound = 0;
+    int maxAnchor = -1;
+    for (uint32_t i = 0; i < NPU_MODEL_NUM_PRIORS; i++)
+    {
+        int8_t sc_q = testOut[i * 6U + 1U];
+        float sc = (float)(sc_q - testZp) * testScale;
+        if (sc > testMaxScore)
+        {
+            testMaxScore = sc;
+            maxAnchor = (int)i;
+        }
+        if (sc >= 0.50f)
+        {
+            testFound++;
+        }
+    }
+    PRINTF("AI_MODEL_Init: COCO couple self-test -> invoke=%d, maxScore=%d%% (anchor=%d), faces>=50%%: %u\r\n",
+           (int)testInv, (int)(testMaxScore * 100.0f), maxAnchor, (unsigned)testFound);
+    if (maxAnchor >= 0)
+    {
+        size_t b = (size_t)maxAnchor * 6U;
+        PRINTF("  Max anchor [%d]: c0=%d c1=%d | l=%d t=%d r=%d b=%d\r\n",
+               maxAnchor, testOut[b], testOut[b+1], testOut[b+2], testOut[b+3], testOut[b+4], testOut[b+5]);
+    }
+}
+
+static void SampleCropTensor(const uint16_t *pixels, uint16_t width, uint16_t height,
+                             int rot, int8_t *inputData,
+                             uint16_t *outMidPx, uint8_t *outMidR, uint8_t *outMidG, uint8_t *outMidB)
+{
+    const uint16_t cropSize = (height < width) ? height : width; /* 240 */
+    const uint16_t cropLeft = (width > cropSize) ? ((width - cropSize) / 2U) : 0U; /* 40 */
+    const uint16_t cropTop  = (height > cropSize) ? ((height - cropSize) / 2U) : 0U; /* 0 */
+
+    for (uint16_t ty = 0; ty < NPU_MODEL_INPUT_HEIGHT; ty++)
+    {
+        for (uint16_t tx = 0; tx < NPU_MODEL_INPUT_WIDTH; tx++)
+        {
+            uint16_t sx, sy;
+            switch (rot)
+            {
+                case 2: /* 180 deg upside-down */
+                    sx = cropLeft + (uint16_t)(((uint32_t)(127U - tx) * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    sy = cropTop  + (uint16_t)(((uint32_t)(127U - ty) * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    break;
+                case 1: /* 90 deg CW */
+                    sx = cropLeft + (uint16_t)(((uint32_t)ty * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    sy = cropTop  + (uint16_t)(((uint32_t)(127U - tx) * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    break;
+                case 3: /* 270 deg CW / 90 deg CCW */
+                    sx = cropLeft + (uint16_t)(((uint32_t)(127U - ty) * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    sy = cropTop  + (uint16_t)(((uint32_t)tx * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    break;
+                case 0: /* 0 deg normal */
+                default:
+                    sx = cropLeft + (uint16_t)(((uint32_t)tx * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    sy = cropTop  + (uint16_t)(((uint32_t)ty * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    break;
+            }
+
+            uint16_t px = pixels[(uint32_t)sy * width + sx];
+            uint8_t r = (uint8_t)(((px >> 11U) & 0x1FU) * 255U / 31U);
+            uint8_t g = (uint8_t)(((px >> 5U)  & 0x3FU) * 255U / 63U);
+            uint8_t b = (uint8_t)((px & 0x1FU) * 255U / 31U);
+
+            if (rot == 0 && ty == (NPU_MODEL_INPUT_HEIGHT / 2U) && tx == (NPU_MODEL_INPUT_WIDTH / 2U))
+            {
+                if (outMidPx) *outMidPx = px;
+                if (outMidR)  *outMidR = r;
+                if (outMidG)  *outMidG = g;
+                if (outMidB)  *outMidB = b;
+            }
+
+            size_t base = ((size_t)ty * NPU_MODEL_INPUT_WIDTH + tx) * 3U;
+            inputData[base + 0U] = s_inputLut[r];
+            inputData[base + 1U] = s_inputLut[g];
+            inputData[base + 2U] = s_inputLut[b];
+        }
+    }
+}
+
+static void MapBoxBack(int rot, float norm_l, float norm_t, float norm_r, float norm_b,
+                       uint16_t cropLeft, uint16_t cropTop, uint16_t cropSize,
+                       float *out_xmin, float *out_ymin, float *out_xmax, float *out_ymax)
+{
+    float cs = (float)cropSize;
+    float cl = (float)cropLeft;
+    float ct = (float)cropTop;
+    switch (rot)
+    {
+        case 2: /* 180 deg */
+            *out_xmin = cl + (1.0f - norm_r) * cs;
+            *out_ymin = ct + (1.0f - norm_b) * cs;
+            *out_xmax = cl + (1.0f - norm_l) * cs;
+            *out_ymax = ct + (1.0f - norm_t) * cs;
+            break;
+        case 1: /* 90 deg CW */
+            *out_xmin = cl + norm_t * cs;
+            *out_ymin = ct + (1.0f - norm_r) * cs;
+            *out_xmax = cl + norm_b * cs;
+            *out_ymax = ct + (1.0f - norm_l) * cs;
+            break;
+        case 3: /* 270 deg / 90 deg CCW */
+            *out_xmin = cl + (1.0f - norm_b) * cs;
+            *out_ymin = ct + norm_l * cs;
+            *out_xmax = cl + (1.0f - norm_t) * cs;
+            *out_ymax = ct + norm_r * cs;
+            break;
+        case 0: /* 0 deg */
+        default:
+            *out_xmin = cl + norm_l * cs;
+            *out_ymin = ct + norm_t * cs;
+            *out_xmax = cl + norm_r * cs;
+            *out_ymax = ct + norm_b * cs;
+            break;
+    }
 }
 
 extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width, uint16_t height,
@@ -211,110 +255,212 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width, ui
         return;
     }
 
-    /* Resize (nearest-neighbor squash, same math as model_runner.cpp's
-     * get_signal_data()) straight into the int8 NHWC input tensor. */
     TfLiteTensor *inputTensor = s_interpreter->input(0);
     int8_t *inputData = inputTensor->data.int8;
 
-    for (uint16_t ty = 0; ty < NPU_MODEL_INPUT_HEIGHT; ty++)
+    const uint16_t cropSize = (height < width) ? height : width; /* 240 */
+    const uint16_t cropLeft = (width > cropSize) ? ((width - cropSize) / 2U) : 0U; /* 40 */
+    const uint16_t cropTop  = (height > cropSize) ? ((height - cropSize) / 2U) : 0U; /* 0 */
+
+    uint8_t midR = 0, midG = 0, midB = 0;
+    uint16_t midPx = 0;
+    uint32_t totalElapsedUs = 0;
+
+    static uint32_t s_infFrameCount = 0;
+    s_infFrameCount++;
+
+    /* Dynamic fast rotation scheduler:
+     * Primary physical orientation on J9 is rot=3 (270 deg CW).
+     * If s_activeRot finds a face, we stop immediately (16ms).
+     * If no face is found, we run at most ONE alternative rotation round-robin.
+     * Total inference is 16ms (active) or 32ms max (idle search), keeping FPS >= 8-10. */
+    static int s_activeRot = 3; /* 270 deg default */
+    static int s_altStep = 0;
+    const int allRots[4] = {3, 0, 2, 1};
+
+    int rotsToTry[2];
+    int numRotsToTry = 1;
+    rotsToTry[0] = s_activeRot;
+
+    /* If no face was found last frame, pick 1 alternative rotation round-robin */
+    static bool s_lastHadFace = false;
+    if (!s_lastHadFace)
     {
-        uint16_t sy = (uint16_t)(((uint32_t)ty * height) / NPU_MODEL_INPUT_HEIGHT);
-        for (uint16_t tx = 0; tx < NPU_MODEL_INPUT_WIDTH; tx++)
+        s_altStep = (s_altStep + 1) % 4;
+        if (allRots[s_altStep] != s_activeRot)
         {
-            uint16_t sx = (uint16_t)(((uint32_t)tx * width) / NPU_MODEL_INPUT_WIDTH);
-            uint16_t px = pixels[(uint32_t)sy * width + sx];
-
-            uint8_t r = (uint8_t)(((px >> 11) & 0x1FU) << 3);
-            uint8_t g = (uint8_t)(((px >> 5) & 0x3FU) << 2);
-            uint8_t b = (uint8_t)((px & 0x1FU) << 3);
-
-            size_t base = ((size_t)ty * NPU_MODEL_INPUT_WIDTH + tx) * 3U;
-            inputData[base + 0U] = (int8_t)((int)r - 128);
-            inputData[base + 1U] = (int8_t)((int)g - 128);
-            inputData[base + 2U] = (int8_t)((int)b - 128);
+            rotsToTry[1] = allRots[s_altStep];
+            numRotsToTry = 2;
         }
     }
 
-    uint32_t cycStart = DWT->CYCCNT;
-    TfLiteStatus invokeStatus = s_interpreter->Invoke();
-    uint32_t elapsedCycles = DWT->CYCCNT - cycStart;
-    uint32_t elapsedUs = (uint32_t)(((uint64_t)elapsedCycles * 1000000ULL) / SystemCoreClock);
-    PRINTF("AI_MODEL_RunInference: total classifier time = %uus (%ums)\r\n", (unsigned)elapsedUs,
-           (unsigned)(elapsedUs / 1000U));
+    int bestRot = s_activeRot;
+    float globalMaxScore = -1.0f;
+    int globalMaxAnchor = -1;
 
-    if (invokeStatus != kTfLiteOk)
+    for (int rIdx = 0; rIdx < numRotsToTry; rIdx++)
     {
-        PRINTF("AI_MODEL_RunInference: Invoke() failed\r\n");
-        return;
+        int rot = rotsToTry[rIdx];
+        SampleCropTensor(pixels, width, height, rot, inputData, &midPx, &midR, &midG, &midB);
+
+        uint32_t cycStart = DWT->CYCCNT;
+        TfLiteStatus invokeStatus = s_interpreter->Invoke();
+        uint32_t elapsedCycles = DWT->CYCCNT - cycStart;
+        totalElapsedUs += (uint32_t)(((uint64_t)elapsedCycles * 1000000ULL) / SystemCoreClock);
+
+        if (invokeStatus != kTfLiteOk) continue;
+
+        TfLiteTensor *outputTensor = s_interpreter->output(0);
+        const int8_t *outputData = outputTensor->data.int8;
+        float outScale = outputTensor->params.scale <= 0.0f ? ULTRAFACE_OUTPUT_SCALE : outputTensor->params.scale;
+        int32_t outZeroPoint = outputTensor->params.scale <= 0.0f ? (int32_t)ULTRAFACE_OUTPUT_ZERO_POINT : outputTensor->params.zero_point;
+
+        s_candidateCount = 0;
+        float rotMaxScore = -1.0f;
+        int rotMaxAnchor = -1;
+        for (uint32_t i = 0; i < NPU_MODEL_NUM_PRIORS; i++)
+        {
+            size_t base = i * 6U;
+            int8_t face_score_q = outputData[base + 1U];
+            float score = (float)(face_score_q - outZeroPoint) * outScale;
+            if (score > rotMaxScore)
+            {
+                rotMaxScore = score;
+                rotMaxAnchor = (int)i;
+            }
+            if (score >= NPU_MODEL_DETECTION_THRESHOLD)
+            {
+                float norm_left   = ((float)(outputData[base + 2U] - outZeroPoint) * outScale);
+                float norm_top    = ((float)(outputData[base + 3U] - outZeroPoint) * outScale);
+                float norm_right  = ((float)(outputData[base + 4U] - outZeroPoint) * outScale);
+                float norm_bottom = ((float)(outputData[base + 5U] - outZeroPoint) * outScale);
+
+                if (norm_left < 0.0f) norm_left = 0.0f;
+                if (norm_top < 0.0f) norm_top = 0.0f;
+                if (norm_right > 1.0f) norm_right = 1.0f;
+                if (norm_bottom > 1.0f) norm_bottom = 1.0f;
+
+                float bw = norm_right - norm_left;
+                float bh = norm_bottom - norm_top;
+
+                /* Filter out false-positive anchors:
+                 * 1. Aspect ratio of human face is ~1.0 (between 0.45 and 2.2)
+                 * 2. Reject boxes that span almost the entire image (bw > 0.90 || bh > 0.90)
+                 * 3. Reject tiny slivers (bw < 0.08 || bh < 0.08) */
+                if (bw > 0.08f && bh > 0.08f && bw < 0.90f && bh < 0.90f)
+                {
+                    float aspect = bw / bh;
+                    if (aspect >= 0.45f && aspect <= 2.2f && s_candidateCount < MAX_CANDIDATES)
+                    {
+                        float xmin, ymin, xmax, ymax;
+                        MapBoxBack(rot, norm_left, norm_top, norm_right, norm_bottom,
+                                   cropLeft, cropTop, cropSize, &xmin, &ymin, &xmax, &ymax);
+
+                        s_candidates[s_candidateCount].score = score;
+                        s_candidates[s_candidateCount].xmin = xmin;
+                        s_candidates[s_candidateCount].ymin = ymin;
+                        s_candidates[s_candidateCount].xmax = xmax;
+                        s_candidates[s_candidateCount].ymax = ymax;
+                        s_candidateCount++;
+                    }
+                }
+            }
+        }
+
+        if (rotMaxScore > globalMaxScore)
+        {
+            globalMaxScore = rotMaxScore;
+            globalMaxAnchor = rotMaxAnchor;
+            bestRot = rot;
+        }
+
+        /* If this rotation detected a valid face, lock onto it and break! */
+        if (s_candidateCount > 0)
+        {
+            s_activeRot = rot;
+            bestRot = rot;
+            break;
+        }
     }
 
-    /* FOMO grid decode - see the file-level comment above for the
-     * channel/threshold/merge conventions ported from EI's own
-     * process_fomo_i8(). */
-    TfLiteTensor *outputTensor = s_interpreter->output(0);
-    const int8_t *outputData = outputTensor->data.int8;
-    float outScale = outputTensor->params.scale;
-    int32_t outZeroPoint = outputTensor->params.zero_point;
+    s_lastHadFace = (s_candidateCount > 0);
 
-    s_cubeCount = 0;
-    for (uint16_t gy = 0; gy < NPU_MODEL_GRID_HEIGHT; gy++)
+    if ((s_infFrameCount % 16U) == 0U)
     {
-        for (uint16_t gx = 0; gx < NPU_MODEL_GRID_WIDTH; gx++)
+        int deg = 0;
+        switch (bestRot) {
+            case 1: deg = 90; break;
+            case 2: deg = 180; break;
+            case 3: deg = 270; break;
+            default: deg = 0; break;
+        }
+        PRINTF("AI NPU: %ums | Top score: %d%% (threshold %d%%, rot=%d deg, a=%d) | MidPx: 0x%04X R=%u G=%u B=%u\r\n",
+               (unsigned)(totalElapsedUs / 1000U),
+               (int)(globalMaxScore * 100.0f),
+               (int)(NPU_MODEL_DETECTION_THRESHOLD * 100.0f),
+               deg,
+               globalMaxAnchor,
+               midPx, (unsigned)midR, (unsigned)midG, (unsigned)midB);
+    }
+
+    /* Sort candidate boxes descending by score */
+    for (uint32_t i = 0; i < s_candidateCount; i++)
+    {
+        for (uint32_t j = i + 1; j < s_candidateCount; j++)
         {
-            size_t base = ((size_t)gy * NPU_MODEL_GRID_WIDTH + gx) * (NPU_MODEL_CLASS_COUNT + 1U);
-            for (uint32_t cls = 0; cls < NPU_MODEL_CLASS_COUNT; cls++)
+            if (s_candidates[j].score > s_candidates[i].score)
             {
-                int8_t q = outputData[base + 1U + cls]; /* +1: skip background channel 0 */
-                float confidence = (float)((int32_t)q - outZeroPoint) * outScale;
-                NPU_HandleCube(gx, gy, confidence, s_labels[cls]);
+                candidate_box_t tmp = s_candidates[i];
+                s_candidates[i] = s_candidates[j];
+                s_candidates[j] = tmp;
             }
         }
     }
 
-    /* Merge overlapping/adjacent same-class cubes into boxes, same
-     * quadratic-but-tiny-N approach as EI's process_cubes(). Grid cell
-     * size in pixels = model input / grid (8 for this model). */
-    const uint16_t cellPixels = NPU_MODEL_INPUT_WIDTH / NPU_MODEL_GRID_WIDTH;
+    /* Non-Maximum Suppression (NMS) */
     uint32_t boxCount = 0;
-
-    for (uint32_t i = 0; i < s_cubeCount && boxCount < AI_MODEL_MAX_BOXES; i++)
+    for (uint32_t i = 0; i < s_candidateCount && boxCount < AI_MODEL_MAX_BOXES; i++)
     {
-        bool merged = false;
-        for (uint32_t b = 0; b < boxCount; b++)
+        if (s_candidates[i].score < 0.0f)
         {
-            ai_bbox_t *box = &result->boxes[b];
-            if (box->label != s_cubes[i].label)
+            continue; /* Suppressed */
+        }
+
+        ai_bbox_t *box = &result->boxes[boxCount++];
+        box->label = "face";
+        box->score = s_candidates[i].score;
+        box->x = (uint16_t)s_candidates[i].xmin;
+        box->y = (uint16_t)s_candidates[i].ymin;
+        box->width = (uint16_t)(s_candidates[i].xmax - s_candidates[i].xmin);
+        box->height = (uint16_t)(s_candidates[i].ymax - s_candidates[i].ymin);
+
+        float area_i = (s_candidates[i].xmax - s_candidates[i].xmin) * (s_candidates[i].ymax - s_candidates[i].ymin);
+        for (uint32_t j = i + 1; j < s_candidateCount; j++)
+        {
+            if (s_candidates[j].score < 0.0f)
             {
                 continue;
             }
-            uint16_t bx = box->x / cellPixels;
-            uint16_t by = box->y / cellPixels;
-            uint16_t bw = box->width / cellPixels;
-            uint16_t bh = box->height / cellPixels;
-            npu_cube_t asBox = {bx, by, bw, bh, box->score, box->label};
-            if (NPU_CubeCheckOverlap(&asBox, s_cubes[i].x, s_cubes[i].y, s_cubes[i].width, s_cubes[i].height,
-                                     s_cubes[i].confidence))
-            {
-                box->x = (uint16_t)(asBox.x * cellPixels);
-                box->y = (uint16_t)(asBox.y * cellPixels);
-                box->width = (uint16_t)(asBox.width * cellPixels);
-                box->height = (uint16_t)(asBox.height * cellPixels);
-                box->score = asBox.confidence;
-                merged = true;
-                break;
-            }
-        }
 
-        if (!merged)
-        {
-            ai_bbox_t *box = &result->boxes[boxCount];
-            box->label = s_cubes[i].label;
-            box->x = (uint16_t)(s_cubes[i].x * cellPixels);
-            box->y = (uint16_t)(s_cubes[i].y * cellPixels);
-            box->width = (uint16_t)(s_cubes[i].width * cellPixels);
-            box->height = (uint16_t)(s_cubes[i].height * cellPixels);
-            box->score = s_cubes[i].confidence;
-            boxCount++;
+            float inter_xmin = (s_candidates[i].xmin > s_candidates[j].xmin) ? s_candidates[i].xmin : s_candidates[j].xmin;
+            float inter_ymin = (s_candidates[i].ymin > s_candidates[j].ymin) ? s_candidates[i].ymin : s_candidates[j].ymin;
+            float inter_xmax = (s_candidates[i].xmax < s_candidates[j].xmax) ? s_candidates[i].xmax : s_candidates[j].xmax;
+            float inter_ymax = (s_candidates[i].ymax < s_candidates[j].ymax) ? s_candidates[i].ymax : s_candidates[j].ymax;
+
+            float inter_w = (inter_xmax > inter_xmin) ? (inter_xmax - inter_xmin) : 0.0f;
+            float inter_h = (inter_ymax > inter_ymin) ? (inter_ymax - inter_ymin) : 0.0f;
+            float inter_area = inter_w * inter_h;
+
+            if (inter_area > 0.0f)
+            {
+                float area_j = (s_candidates[j].xmax - s_candidates[j].xmin) * (s_candidates[j].ymax - s_candidates[j].ymin);
+                float union_area = area_i + area_j - inter_area;
+                float iou = (union_area > 0.0f) ? (inter_area / union_area) : 0.0f;
+                if (iou >= NPU_MODEL_NMS_THRESHOLD)
+                {
+                    s_candidates[j].score = -1.0f; /* Suppress */
+                }
+            }
         }
     }
 
@@ -322,12 +468,13 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width, ui
     result->valid = (boxCount > 0U);
 }
 
+/* Return coordinate space of bounding boxes (frame space: 320x240) */
 extern "C" uint16_t AI_MODEL_GetInputWidth(void)
 {
-    return NPU_MODEL_INPUT_WIDTH;
+    return 320U;
 }
 
 extern "C" uint16_t AI_MODEL_GetInputHeight(void)
 {
-    return NPU_MODEL_INPUT_HEIGHT;
+    return 240U;
 }

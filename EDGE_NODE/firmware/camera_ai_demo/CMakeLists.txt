@@ -318,18 +318,12 @@ endif()
 
 include(${SdkRootDirPath}/CMakeLists.txt)
 
-# Edge Impulse tensor arena (see source/ai/ei_sramx_alloc.c - primary pool
-# is m_sramx's full 96KB, current model's ~185KB arena needs a large
-# overflow on top, see main.c's s_aiScratchPool) doesn't fit in m_data
-# alongside the camera/LCD framebuffers - this fragment adds an output
-# section placing the primary pool in m_sramx instead (declared but
-# otherwise unused by the SDK's own linker script). Additive only
-# (INSERT AFTER) - does not replace/duplicate the SDK's board linker
-# script, so must come after include(${SdkRootDirPath}/CMakeLists.txt)
-# above, which is what actually selects the base -T script.
+mcux_remove_armgcc_linker_script(
+    LINKER ${SdkRootDirPath}/devices/MCX/MCXN/MCXN947/gcc/MCXN947_cm33_core0_flash.ld
+)
 mcux_add_armgcc_linker_script(
     BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}
-    LINKER board_port/ei_sramx.ld
+    LINKER board_port/cm33_core0/MCXN947_cm33_core0_singlecore.ld
 )
 
 # board_port/m_data_ext.ld (widening m_data into core1's reserved RAM) was
@@ -363,7 +357,7 @@ mcux_add_armgcc_linker_script(
 # ASSERT(__StackLimit >= __HeapLimit) will fail the build rather than
 # silently overflowing if this doesn't fit.
 mcux_add_linker_symbol(
-    SYMBOLS "__stack_size__=0x4000"
+    SYMBOLS "__stack_size__=0x1000"
 )
 
 # The panel in hand only has an 8-bit data bus (LCD_D0..D7), not the 16-bit

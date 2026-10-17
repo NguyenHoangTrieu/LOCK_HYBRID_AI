@@ -46,7 +46,11 @@ static void LCD_SetResetPin(bool set) {
 }
 
 static void LCD_SetBacklight(bool on) {
+#if defined(DEMO_LCD_HAS_BLK_PIN) && DEMO_LCD_HAS_BLK_PIN
   GPIO_PinWrite(DEMO_LCD_BLK_GPIO, DEMO_LCD_BLK_PIN, on ? 1U : 0U);
+#else
+  (void)on;
+#endif
 }
 
 /* kLPSPI_MasterPcs1 is never muxed to a physical pin here - it's just the
@@ -109,7 +113,9 @@ static void LCD_InitGpioPins(void) {
   GPIO_PinInit(DEMO_LCD_CS_GPIO, DEMO_LCD_CS_PIN, &idleHighConfig);
   GPIO_PinInit(DEMO_LCD_DC_GPIO, DEMO_LCD_DC_PIN, &outConfig);
 
+#if defined(DEMO_LCD_HAS_BLK_PIN) && DEMO_LCD_HAS_BLK_PIN
   GPIO_PinInit(DEMO_LCD_BLK_GPIO, DEMO_LCD_BLK_PIN, &outConfig);
+#endif
   LCD_SetBacklight(true);
 }
 
@@ -185,7 +191,7 @@ void LCD_SetWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
  * into this scratch buffer before each chunk. SPI1_BUS_PrepareDMA() runs
  * once per call, not once per chunk - the per-call setup cost otherwise
  * dominated fps (see WORKLOG.md). */
-#define LCD_SPI_CHUNK_PIXELS 4096U
+#define LCD_SPI_CHUNK_PIXELS 1024U
 static uint8_t s_pixelSwapBuf[LCD_SPI_CHUNK_PIXELS * 2U];
 
 void LCD_PushPixelsOpen(const uint16_t *pixels, uint32_t count) {

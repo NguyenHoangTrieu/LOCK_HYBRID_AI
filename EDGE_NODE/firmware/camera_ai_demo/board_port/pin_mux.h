@@ -30,6 +30,8 @@ void BOARD_InitFlexioPins(void);
 void BOARD_InitArduinoLcdPins(void);
 void BOARD_InitTouchPins(void);
 void BOARD_InitSdCardPins(void);
+void BOARD_InitBaseboardPeripheralPins(void);
+
 
 #if defined(__cplusplus)
 }

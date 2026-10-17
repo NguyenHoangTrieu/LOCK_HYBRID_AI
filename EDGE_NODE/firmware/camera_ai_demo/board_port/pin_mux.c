@@ -209,20 +209,24 @@ void BOARD_InitArduinoLcdPins(void)
     const gpio_pin_config_t idleHighConfig = {.pinDirection = kGPIO_DigitalOutput, .outputLogic = 1U};
 
     CLOCK_EnableClock(kCLOCK_Port0);
-    CLOCK_EnableClock(kCLOCK_Port1); /* only DC (dual-core build) uses PORT1, see app.h */
+    CLOCK_EnableClock(kCLOCK_Port1);
 
-    /* DC/CS/RST - plugged in directly (Arduino A2/A3/A4, except DC on the
-     * dual-core build - see app.h). */
+    /* DC on PORT1 (Arduino D5, P1_21) */
     PORT_SetPinMux(DEMO_LCD_DC_PORT, DEMO_LCD_DC_PIN, kPORT_MuxAlt0);
-    PORT_SetPinMux(PORT0, DEMO_LCD_CS_PIN, kPORT_MuxAlt0);
-    PORT_SetPinMux(PORT0, DEMO_LCD_RST_PIN, kPORT_MuxAlt0);
     GPIO_PinInit(DEMO_LCD_DC_GPIO, DEMO_LCD_DC_PIN, &outputConfig);
+
+    /* CS on PORT0 (Arduino D10, P0_27) */
+    PORT_SetPinMux(DEMO_LCD_CS_PORT, DEMO_LCD_CS_PIN, kPORT_MuxAlt0);
     GPIO_PinInit(DEMO_LCD_CS_GPIO, DEMO_LCD_CS_PIN, &idleHighConfig);
+
+    /* RST on PORT0 (Arduino D7, P0_31) */
+    PORT_SetPinMux(DEMO_LCD_RST_PORT, DEMO_LCD_RST_PIN, kPORT_MuxAlt0);
     GPIO_PinInit(DEMO_LCD_RST_GPIO, DEMO_LCD_RST_PIN, &idleHighConfig);
 
-    /* BLK (Arduino A5) - see app.h; safe default even if unconnected. */
-    PORT_SetPinMux(PORT0, DEMO_LCD_BLK_PIN, kPORT_MuxAlt0);
+#if defined(DEMO_LCD_HAS_BLK_PIN) && DEMO_LCD_HAS_BLK_PIN
+    PORT_SetPinMux(DEMO_LCD_BLK_PORT, DEMO_LCD_BLK_PIN, kPORT_MuxAlt0);
     GPIO_PinInit(DEMO_LCD_BLK_GPIO, DEMO_LCD_BLK_PIN, &outputConfig);
+#endif
 }
 
 /* ---------------------------------------------------------------------- */
@@ -230,56 +234,44 @@ void BOARD_InitArduinoLcdPins(void)
 /* ---------------------------------------------------------------------- */
 
 /* T_CLK/T_DIN/T_DO ride the shared LPSPI1 bus - only T_CS/T_IRQ need
- * dedicated pins. T_IRQ gets an internal pull-up (open-drain, active-low)
- * since this class of cheap panel often doesn't provide its own. */
+ * dedicated pins. T_IRQ gets an internal pull-up (open-drain, active-low). */
 void BOARD_InitTouchPins(void)
 {
     const gpio_pin_config_t idleHighConfig = {.pinDirection = kGPIO_DigitalOutput, .outputLogic = 1U};
 
     CLOCK_EnableClock(kCLOCK_Port0);
+    CLOCK_EnableClock(kCLOCK_Port1);
 
-    PORT_SetPinMux(PORT0, DEMO_TOUCH_CS_PIN, kPORT_MuxAlt0);
+    /* Touch CS on PORT0 (Arduino D4, P0_30) */
+    PORT_SetPinMux(DEMO_TOUCH_CS_PORT, DEMO_TOUCH_CS_PIN, kPORT_MuxAlt0);
     GPIO_PinInit(DEMO_TOUCH_CS_GPIO, DEMO_TOUCH_CS_PIN, &idleHighConfig);
 
+    /* Touch IRQ on PORT1 (Arduino D3, P1_23) - input with pull-up */
     const port_pin_config_t irqPullUpConfig = {
         .pullSelect   = kPORT_PullUp,
         .mux          = kPORT_MuxAlt0,
         .inputBuffer  = kPORT_InputBufferEnable,
         .lockRegister = kPORT_UnlockRegister,
     };
-    PORT_SetPinConfig(PORT0, DEMO_TOUCH_IRQ_PIN, &irqPullUpConfig);
+    PORT_SetPinConfig(DEMO_TOUCH_IRQ_PORT, DEMO_TOUCH_IRQ_PIN, &irqPullUpConfig);
     const gpio_pin_config_t inputConfig = {.pinDirection = kGPIO_DigitalInput, .outputLogic = 0U};
     GPIO_PinInit(DEMO_TOUCH_IRQ_GPIO, DEMO_TOUCH_IRQ_PIN, &inputConfig);
 }
 #endif /* DEMO_LCD_ARDUINO_HEADER */
 
 /* ---------------------------------------------------------------------- */
-/* 5. Shared SPI bus (SCK/MOSI/MISO) + microSD slot's own CS - D10..D13,   */
+/* 5. Shared SPI bus (SCK/MOSI/MISO) + microSD slot CS - Arduino header    */
 /*    hardware LPSPI1                                                      */
 /* ---------------------------------------------------------------------- */
 
-/*
- * D10..D13 are LP_FLEXCOMM1/LPSPI1 (mux Alt2), a real hardware SPI
- * peripheral shared by the LCD, touch, and SD card (see spi1_bus.h) -
- * this function's name is legacy from when it only served the SD card.
- * Only D10/PCS0 is muxed as hardware chip-select: SDSPI_Init() needs to
- * flip PCS polarity at runtime for the SD card's power-up dummy clocks,
- * which only works through real PCS hardware. LCD/touch use plain GPIO
- * chip-selects instead (app.h), since they don't need that trick.
- */
 void BOARD_InitSdCardPins(void)
 {
     CLOCK_EnableClock(kCLOCK_Port0);
 
-    PORT_SetPinMux(PORT0, 24U, kPORT_MuxAlt2); /* P0_24 = FC1_P0 = LPSPI1 SDO (D11/SD_DI) */
-    PORT_SetPinMux(PORT0, 25U, kPORT_MuxAlt2); /* P0_25 = FC1_P1 = LPSPI1 SCK (D13/SD_CK) */
-    PORT_SetPinMux(PORT0, 27U, kPORT_MuxAlt2); /* P0_27 = FC1_P3 = LPSPI1 PCS0 (D10/SD_SS) */
+    PORT_SetPinMux(PORT0, 24U, kPORT_MuxAlt2); /* P0_24 = FC1_P0 = LPSPI1 SDO (D11/SPI_MOSI) */
+    PORT_SetPinMux(PORT0, 25U, kPORT_MuxAlt2); /* P0_25 = FC1_P1 = LPSPI1 SCK (D13/SPI_SCK) */
 
-    /* P0_26 = FC1_P2 = LPSPI1 SDI (D12/SD_MISO) - required pull-up. This
-     * shield's SD slot has none of its own (common on cheap shields);
-     * without it the line floats and reads a constant 0x00 instead of the
-     * SD-over-SPI idle-high 0xFF, so SDSPI_Init() always times out
-     * (confirmed on real hardware - see WORKLOG.md). */
+    /* P0_26 = FC1_P2 = LPSPI1 SDI (D12/SPI_MISO) - required pull-up */
     const port_pin_config_t sdiPullUpConfig = {
         .pullSelect   = kPORT_PullUp,
         .mux          = kPORT_MuxAlt2,
@@ -287,4 +279,56 @@ void BOARD_InitSdCardPins(void)
         .lockRegister = kPORT_UnlockRegister,
     };
     PORT_SetPinConfig(PORT0, 26U, &sdiPullUpConfig);
+
+    /* SD Card CS on PORT0 (Arduino A3, P0_22) - GPIO output, idle high */
+    const gpio_pin_config_t idleHighConfig = {.pinDirection = kGPIO_DigitalOutput, .outputLogic = 1U};
+    PORT_SetPinMux(DEMO_SD_CS_PORT, DEMO_SD_CS_PIN, kPORT_MuxAlt0);
+    GPIO_PinInit(DEMO_SD_CS_GPIO, DEMO_SD_CS_PIN, &idleHighConfig);
 }
+
+/* ---------------------------------------------------------------------- */
+/* 6. Baseboard Peripherals: RFID, ESP32, INA228, Servo                    */
+/* ---------------------------------------------------------------------- */
+void BOARD_InitBaseboardPeripheralPins(void)
+{
+    const gpio_pin_config_t idleHighConfig = {.pinDirection = kGPIO_DigitalOutput, .outputLogic = 1U};
+    const gpio_pin_config_t inputConfig    = {.pinDirection = kGPIO_DigitalInput, .outputLogic = 0U};
+    const port_pin_config_t pullUpInputConfig = {
+        .pullSelect   = kPORT_PullUp,
+        .mux          = kPORT_MuxAlt0,
+        .inputBuffer  = kPORT_InputBufferEnable,
+        .lockRegister = kPORT_UnlockRegister,
+    };
+
+    CLOCK_EnableClock(kCLOCK_Port0);
+    CLOCK_EnableClock(kCLOCK_Port1);
+    CLOCK_EnableClock(kCLOCK_Port4);
+
+    /* RFID-RC522: CS (P0_28 / D8) idle high, RST (P0_14 / A2) idle high, IRQ (P0_15 / A4) input pullup */
+    PORT_SetPinMux(DEMO_RFID_CS_PORT, DEMO_RFID_CS_PIN, kPORT_MuxAlt0);
+    GPIO_PinInit(DEMO_RFID_CS_GPIO, DEMO_RFID_CS_PIN, &idleHighConfig);
+
+    PORT_SetPinMux(DEMO_RFID_RST_PORT, DEMO_RFID_RST_PIN, kPORT_MuxAlt0);
+    GPIO_PinInit(DEMO_RFID_RST_GPIO, DEMO_RFID_RST_PIN, &idleHighConfig);
+
+    PORT_SetPinConfig(DEMO_RFID_IRQ_PORT, DEMO_RFID_IRQ_PIN, &pullUpInputConfig);
+    GPIO_PinInit(DEMO_RFID_IRQ_GPIO, DEMO_RFID_IRQ_PIN, &inputConfig);
+
+    /* ESP32: CS (P0_23 / A5) idle high so it doesn't assert SPI while inactive */
+    PORT_SetPinMux(DEMO_ESP32_CS_PORT, DEMO_ESP32_CS_PIN, kPORT_MuxAlt0);
+    GPIO_PinInit(DEMO_ESP32_CS_GPIO, DEMO_ESP32_CS_PIN, &idleHighConfig);
+
+    /* INA228: ALRT (P0_29 / D2) input pullup */
+    PORT_SetPinConfig(DEMO_INA_ALRT_PORT, DEMO_INA_ALRT_PIN, &pullUpInputConfig);
+    GPIO_PinInit(DEMO_INA_ALRT_GPIO, DEMO_INA_ALRT_PIN, &inputConfig);
+
+    /* On-board RGB LED D2 (Active-Low: Red=P0_10, Green=P0_27, Blue=P1_2).
+     * Drive all cathodes high (1) so the annoying on-board LED is completely turned OFF. */
+    PORT_SetPinMux(PORT1, 2U, kPORT_MuxAlt0);
+    GPIO_PinInit(GPIO1, 2U, &idleHighConfig);
+
+    /* Servo Motor: PWM (P0_10 / D9) / Red LED cathode: idle high to keep Red LED off */
+    PORT_SetPinMux(DEMO_SERVO_PWM_PORT, DEMO_SERVO_PWM_PIN, kPORT_MuxAlt0);
+    GPIO_PinInit(DEMO_SERVO_PWM_GPIO, DEMO_SERVO_PWM_PIN, &idleHighConfig);
+}
+

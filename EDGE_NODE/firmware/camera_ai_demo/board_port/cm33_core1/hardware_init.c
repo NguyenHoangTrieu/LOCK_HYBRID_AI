@@ -51,9 +51,10 @@ void BOARD_InitHardware(void)
     CLOCK_AttachClk(kFRO_HF_to_CLKOUT);
     CLOCK_SetClkDiv(kCLOCK_DivClkOut, 2U);
 
-    /* GPIO0 for most LCD pins, GPIO1 for DC (Arduino D3 - see app.h). */
+    /* GPIO clocks for baseboard peripherals */
     CLOCK_EnableClock(kCLOCK_Gpio0);
     CLOCK_EnableClock(kCLOCK_Gpio1);
+    CLOCK_EnableClock(kCLOCK_Gpio4);
 
     /* Camera I2C (SCCB) clock. */
     CLOCK_AttachClk(kFRO12M_to_FLEXCOMM7);
@@ -76,9 +77,8 @@ void BOARD_InitHardware(void)
 
     BOARD_InitCameraPins();
     BOARD_InitArduinoLcdPins();
-    /* Stage 4 (WORKLOG.md): microSD slot, same shared LPSPI1 bus as the
-     * LCD - includes the real-hardware-confirmed SDI/DO pull-up fix (see
-     * pin_mux.c's BOARD_InitSdCardPins(), a shared file - this project's
-     * SD shield has no pull-up of its own). */
+    BOARD_InitTouchPins();
     BOARD_InitSdCardPins();
+    BOARD_InitBaseboardPeripheralPins();
 }
+

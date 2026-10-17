@@ -44,7 +44,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_TICK_HOOK                    0
 #define configSUPPORT_STATIC_ALLOCATION        0
 #define configSUPPORT_DYNAMIC_ALLOCATION       1
-#define configTOTAL_HEAP_SIZE                  (24U * 1024U) /* tune per stage - see WORKLOG.md RAM budget */
+#define configTOTAL_HEAP_SIZE                  (8U * 1024U) /* 8KB is plenty for single-task per core, saves 16KB RAM */
 #define configUSE_MALLOC_FAILED_HOOK           1
 #define configCHECK_FOR_STACK_OVERFLOW         2 /* cheap insurance - this project has hit real stack-overflow bugs before, see WORKLOG.md */
 #define configUSE_TRACE_FACILITY               0

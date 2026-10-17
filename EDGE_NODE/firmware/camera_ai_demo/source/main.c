@@ -35,6 +35,7 @@
 #include "model_runner.h"
 #include "snapshot.h"
 #include "text_overlay.h"
+#include "bbox_overlay.h"
 #include "usb_video_camera.h"
 
 #if !DEMO_LCD_CAMERA_PREVIEW
@@ -45,6 +46,7 @@
 #define DEMO_STATUS_LINE_Y0 40U
 #define DEMO_STATUS_LINE_GAP_PX 14U
 
+#if 0
 static void DEMO_DrawStatusLine(uint16_t lineIndex, const char *paddedLabel, bool detected) {
   char text[16];
   size_t n = strlen(paddedLabel);
@@ -61,6 +63,7 @@ static void DEMO_DrawStatusLine(uint16_t lineIndex, const char *paddedLabel, boo
 
   TEXT_DrawString(DEMO_STATUS_LINE_X, y, text, fgColor, 0x0000U /* black background */, DEMO_STATUS_TEXT_SCALE);
 }
+#endif
 #endif /* !DEMO_LCD_CAMERA_PREVIEW */
 
 /* Fills the LCD with one solid color at startup, to clear old GRAM
@@ -108,6 +111,32 @@ static void CAMERA_CAPTURE_LogFrameSignature(uint32_t frameNumber,
          frameNumber, samples, minPixel, maxPixel, (uint16_t)(sum / samples),
          (minPixel == maxPixel) ? " (flat - lens cap on, or no real image data)"
                                 : "");
+}
+
+static void DEMO_PrintAsciiPreview(const uint16_t *frame, uint16_t width, uint16_t height) {
+  /* 32 columns x 16 rows ASCII preview with 10 luminance levels to check lens focus & orientation */
+  static const char lut[] = " .:-=+*#%@";
+  PRINTF("\r\n+--- Camera 32x16 View (Focus Check) ---+\r\n");
+  for (uint32_t y = 0; y < 16U; y++) {
+    char row[35];
+    row[0] = '|';
+    for (uint32_t x = 0; x < 32U; x++) {
+      uint32_t sy = (y * (uint32_t)height) / 16U;
+      uint32_t sx = (x * (uint32_t)width) / 32U;
+      uint16_t px = frame[sy * width + sx];
+      uint32_t r = ((px >> 11U) & 0x1FU) * 255U / 31U;
+      uint32_t g = ((px >> 5U)  & 0x3FU) * 255U / 63U;
+      uint32_t b = (px & 0x1FU) * 255U / 31U;
+      uint32_t lum = (r * 299U + g * 587U + b * 114U) / 1000U;
+      uint32_t idx = (lum * 9U) / 255U;
+      if (idx > 9U) idx = 9U;
+      row[1 + x] = lut[idx];
+    }
+    row[33] = '|';
+    row[34] = '\0';
+    PRINTF("%s\r\n", row);
+  }
+  PRINTF("+---------------------------------------+\r\n");
 }
 #endif /* !DEMO_LCD_CAMERA_PREVIEW */
 
@@ -261,6 +290,11 @@ int main(void) {
    * after a fresh Reinit(), so the very next frame isn't trustworthy. */
   bool skipNextFrame = false;
 
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+  uint32_t fpsFrameCount = 0U;
+  uint32_t fpsWindowStartCycle = DWT->CYCCNT;
+
   while (1) {
     if (CAMERA_CAPTURE_IsFrameReady()) {
       CAMERA_CAPTURE_ClearFrameReady();
@@ -273,51 +307,57 @@ int main(void) {
       uint16_t *frame = CAMERA_CAPTURE_GetFrameBuffer();
       uint32_t frameNumber = CAMERA_CAPTURE_GetFrameCount();
 
-      /* Every 15th frame (~2x/sec at 30fps) so the log stays readable. */
-      if ((frameNumber % 15U) == 1U) {
+      /* Every 150th frame (~15s) so the log stays readable and doesn't hurt FPS. */
+      if ((frameNumber % 150U) == 1U) {
         CAMERA_CAPTURE_LogFrameSignature(frameNumber, frame);
+        DEMO_PrintAsciiPreview(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT);
       }
 
-      /* Stop SmartDMA before inference: SmartDMA's own working RAM
-       * (0x04000000) is the same bank as the AI tensor arena - leaving it
-       * running while the arena is used corrupts SmartDMA's state (see
-       * WORKLOG.md). */
+      /* Stop SmartDMA before inference and LCD drawing:
+       * ensures SmartDMA has 100% uncontested access during capture,
+       * and CPU/NPU/eDMA have 100% uncontested access during inference/LCD. */
       CAMERA_CAPTURE_Deinit();
 
       ai_model_result_t aiResult;
       AI_MODEL_RunInference(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT,
                             &aiResult);
 
-      /* Still before Reinit(): draws into/reads `frame` directly, so must
-       * run while the buffer is stable. Internally rate-limited to at
-       * most 1 capture/sec - a no-op most frames. */
-      SNAPSHOT_OnFrame(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT,
-                       &aiResult, AI_MODEL_GetInputWidth(), AI_MODEL_GetInputHeight());
-
-      CAMERA_CAPTURE_Reinit();
-      skipNextFrame = true;
-
-      bool sawFace = false;
       if (aiResult.valid) {
+        if (aiResult.boxCount > 0) {
+          PRINTF("\r\n========================================\r\n");
+          PRINTF(">>> [FACE DETECTED] %u face(s) found! <<<\r\n", (unsigned)aiResult.boxCount);
+          PRINTF("========================================\r\n");
+        }
+        float scaleX = (float)DEMO_BUFFER_WIDTH / (float)AI_MODEL_GetInputWidth();
+        float scaleY = (float)DEMO_BUFFER_HEIGHT / (float)AI_MODEL_GetInputHeight();
         for (uint32_t i = 0; i < aiResult.boxCount; i++) {
           const ai_bbox_t *box = &aiResult.boxes[i];
-          if (strcmp(box->label, "face") == 0) {
-            sawFace = true;
-          }
-          /* debug_console_lite may not support %f, so print score as a
-           * percentage integer. */
+          BBOX_DrawRect(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT,
+                        (int)((float)box->x * scaleX), (int)((float)box->y * scaleY),
+                        (int)((float)box->width * scaleX), (int)((float)box->height * scaleY),
+                        0x07E0U /* green */);
           PRINTF("AI result: box[%u] label=%s x=%u y=%u w=%u h=%u score=%d%%\r\n",
                  i, box->label, box->x, box->y, box->width, box->height,
                  (int)(box->score * 100.0f));
         }
       }
 
-      DEMO_DrawStatusLine(0U, "FACE      ", sawFace);
+      /* Save snapshot to SD if face detected (rate-limited internally) */
+      SNAPSHOT_OnFrame(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT,
+                       &aiResult, AI_MODEL_GetInputWidth(), AI_MODEL_GetInputHeight());
 
-      /* Stays lit for the same window SNAPSHOT_OnFrame() rate-limits
-       * captures to, so it clears itself as a new capture becomes
-       * possible again. */
-      DEMO_DrawStatusLine(1U, "CAPTURE   ", SNAPSHOT_IsNoticeActive());
+      /* Push full frame + overlay to LCD */
+      LCD_DrawImage(0U, 0U, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, frame);
+
+      fpsFrameCount++;
+      if ((int32_t)(DWT->CYCCNT - fpsWindowStartCycle) >= (int32_t)SystemCoreClock) {
+        PRINTF("LCD preview: %u fps\r\n", fpsFrameCount);
+        fpsFrameCount = 0U;
+        fpsWindowStartCycle = DWT->CYCCNT;
+      }
+
+      CAMERA_CAPTURE_Reinit();
+      skipNextFrame = true;
     }
   }
 #else

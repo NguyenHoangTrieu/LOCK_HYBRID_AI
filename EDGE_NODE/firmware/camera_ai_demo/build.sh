@@ -95,8 +95,9 @@ do_build() {
 do_flash() {
 	local elf; elf="$(find_elf)" || die "nothing to flash - run ./build.sh build first"
 	say "Flashing $elf -> $TARGET via MCU-Link (CMSIS-DAP)"
-	pyocd_run flash -t "$TARGET" "$elf"
-	say "Done. Board reset and running."
+	"$VENV_BIN/nxpdebugmbox" -i mcu-link cmd -f mcxn947 start-debug-session 2>/dev/null || true
+	pyocd_run flash -t "$TARGET" -O pack.debug_sequences.enable=false "$elf"
+	say "Done. Board running."
 }
 
 do_erase() {
@@ -170,8 +171,9 @@ case "${1:-all}" in
 	clean)          say "removing $BUILD_DIR"; rm -rf "$BUILD_DIR";;
 	monitor)        do_monitor;;
 	all)            do_build; do_flash;;
+	recover)        "$APP_DIR/recover_board.sh";;
 	dualcore-build) do_dualcore_build;;
 	dualcore-flash) do_dualcore_flash;;
 	dualcore-all)   do_dualcore_build; do_dualcore_flash;;
-	*)       die "unknown command '$1' (build|rebuild|flash|erase|reset|clean|monitor|dualcore-build|dualcore-flash|dualcore-all)";;
+	*)       die "unknown command '$1' (build|rebuild|flash|erase|reset|recover|clean|monitor|dualcore-build|dualcore-flash|dualcore-all)";;
 esac

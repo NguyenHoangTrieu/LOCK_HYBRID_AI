@@ -23,12 +23,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Physical placement: 0x20028000-0x2004E000, immediately below core1's own
- * 0x2004E000-0x20068000 region. core0's own m_data spans (0x20000000,
- * length 0x28000) - see MCXN947_cm33_core0_dualcore.ld's header comment
- * for the Stage 5 history of exactly this boundary (widened once, at this
- * region's expense, for core0's AI tensor arena). */
-#define IPC_SHARED_BASE 0x20028000u
+/* Physical placement: 0x20042000-0x20068000. core0's own m_data spans (0x20000000,
+ * length 0x42000) for the 244KB UltraFace tensor arena. Core 1 runs in SRAMX.
+ * MUST match MCXN947_cm33_core0_dualcore.ld's m_shared block. */
+#define IPC_SHARED_BASE 0x20042000u
 #define IPC_SHARED_SIZE 0x00026000u /* 152KB */
 
 /* Layout within the shared region. */

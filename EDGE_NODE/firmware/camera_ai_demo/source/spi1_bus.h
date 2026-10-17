@@ -1,14 +1,16 @@
 /*
- * spi1_bus.h - shared hardware LPSPI1 bus, Arduino header D10..D13.
+ * spi1_bus.h - shared hardware LPSPI1 bus, Arduino header D11..D13.
  *
- * SCK/MOSI/MISO (D13/D11/D12) are physically shared by three devices on
- * the 2.4" SPI TFT module: the microSD slot (hardware PCS0 on D10), the
- * LCD panel, and the touch controller. Only the microSD slot uses the
- * peripheral's own hardware chip-select - SDSPI_Init() needs to flip its
- * active polarity at runtime, which only works through real PCS hardware.
- * LCD and touch each use a plain GPIO pin for CS instead, and pass
- * kLPSPI_MasterPcs1 as their transfer's PCS flag - a "don't care" value,
- * since PCS1 is never muxed to a physical pin on this board.
+ * SCK/MOSI/MISO (D13/D11/D12, P0_25/P0_24/P0_26) are physically shared by
+ * multiple SPI devices on the LOCK_EDGE_BASEBOARD:
+ *  - 2.4" SPI TFT LCD (CS on D10 / P0_27)
+ *  - Touch controller XPT2046 (CS on D4 / P0_30, IRQ on D3 / P1_23)
+ *  - microSD slot (CS on A3 / P0_22)
+ *  - RFID-RC522 module (CS on D8 / P0_28)
+ *  - ESP32-C5 module (CS on A5 / P0_23)
+ *
+ * All devices use dedicated GPIO chip-selects and pass kLPSPI_MasterPcs1
+ * as their transfer PCS flag (unrouted on the board).
  *
  * Because the bus is shared, baud rate is not a one-time setting - every
  * driver must reclaim its own rate via SPI1_BUS_SetBaudRate() immediately

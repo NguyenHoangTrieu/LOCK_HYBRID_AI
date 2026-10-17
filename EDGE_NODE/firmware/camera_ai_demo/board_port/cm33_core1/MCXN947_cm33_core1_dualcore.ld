@@ -53,15 +53,14 @@ RPMSG_SHMEM_SIZE = DEFINED(__use_shmem__) ? 0x2000 : 0;
 /* Specify the memory areas */
 MEMORY
 {
-  m_interrupts          (RX)  : ORIGIN = 0x2004E000, LENGTH = 0x00000400
-  /* Rebalanced a second time (WORKLOG.md, Stage 3): 60KB/43KB (Stage 2's
-     split) still overflowed text by ~1.5KB once the real camera/LCD/SPI
-     driver code was added, even after trimming FreeRTOS down to just the
-     modules this project actually uses (no software timers/event groups/
-     stream buffers/co-routines). 64KB/39KB fits both with real margin. */
-  m_text                (RX)  : ORIGIN = 0x2004E400, LENGTH = 0x00010000
-  m_data                (RW)  : ORIGIN = 0x2005E400, LENGTH = 0x00009C00
-  rpmsg_sh_mem          (RW)  : ORIGIN = 0x2004E000 - RPMSG_SHMEM_SIZE, LENGTH = RPMSG_SHMEM_SIZE
+  /* Relocated to SRAMX (0x04001000-0x04018000, 92KB). 0x04000000-0x04001000 (4KB)
+   * is reserved for SmartDMA camera firmware. Placing Core 1 in SRAMX frees
+   * SRAM0..7 (416KB) entirely for Core 0's UltraFace tensor arena (248KB) and
+   * the shared 320x240 RGB565 frame buffer (153.6KB). */
+  m_interrupts          (RX)  : ORIGIN = 0x04001000, LENGTH = 0x00000400
+  m_text                (RX)  : ORIGIN = 0x04001400, LENGTH = 0x0000EC00
+  m_data                (RW)  : ORIGIN = 0x04010000, LENGTH = 0x00008000
+  rpmsg_sh_mem          (RW)  : ORIGIN = 0x04010000 - RPMSG_SHMEM_SIZE, LENGTH = RPMSG_SHMEM_SIZE
   m_usb_sram            (RW)  : ORIGIN = 0x400BA000, LENGTH = 0x00001000
 }
 

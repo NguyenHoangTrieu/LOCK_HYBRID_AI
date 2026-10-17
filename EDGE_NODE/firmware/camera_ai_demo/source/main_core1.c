@@ -30,8 +30,8 @@
  * Height() from core1 (model_runner.h's implementation only builds into
  * core0's image). Must match the model actually deployed on core0 - see
  * its own boot log ("AI_MODEL_Init: ... (72x72 input...)"). */
-#define AI_MODEL_INPUT_WIDTH  72U
-#define AI_MODEL_INPUT_HEIGHT 72U
+#define AI_MODEL_INPUT_WIDTH  128U
+#define AI_MODEL_INPUT_HEIGHT 128U
 
 /* Generous vs. the ~3.9ms NPU inference time actually measured. A timeout
  * here means core0 didn't answer in time - this frame just skips the AI
@@ -223,6 +223,12 @@ static void CameraLcdTask(void *pvParameters)
 
                 if (aiResult.valid)
                 {
+                    if (aiResult.boxCount > 0)
+                    {
+                        PRINTF("\r\n========================================\r\n");
+                        PRINTF(">>> [FACE DETECTED] %u face(s) found! <<<\r\n", (unsigned)aiResult.boxCount);
+                        PRINTF("========================================\r\n");
+                    }
                     float scaleX = (float)DEMO_BUFFER_WIDTH / (float)AI_MODEL_INPUT_WIDTH;
                     float scaleY = (float)DEMO_BUFFER_HEIGHT / (float)AI_MODEL_INPUT_HEIGHT;
                     for (uint32_t i = 0; i < aiResult.boxCount; i++)

@@ -76,24 +76,28 @@ handling) — **this bus-sharing logic is new and untested on real
 hardware**, more so than a single-device SPI driver would be; see Known
 Limitations before assuming it's solid.
 
-| Panel pin | Arduino pin | MCU pin | Notes |
+| Signal / Device Pin | Arduino Pin | MCU Pin | Notes |
 |---|---|---|---|
-| SCK / SD_SCK / T_CLK | D13 | P0_25 | shared bus, hardware LPSPI1 SCK |
-| SDI(MOSI) / SD_MOSI / T_DIN | D11 | P0_24 | shared bus, hardware LPSPI1 SDO (MCU→devices) |
-| SDO(MISO) / SD_MISO / T_DO | D12 | P0_26 | shared bus, hardware LPSPI1 SDI (devices→MCU); needs the internal pull-up `pin_mux.c` already enables here |
-| LCD CS | A3 | P0_22 | manual GPIO, LCD-only |
-| LCD DC | A2 (legacy single-core build) / **D3** (dual-core build) | P0_14 / **P1_23** | manual GPIO, command/data select - moved to GPIO1 for the dual-core build while this pin's real blocker (core1 has no SAU, needs an explicit `PCNS` Non-Secure grant from core0 - see WORKLOG.md's EIGHTH FOLLOW-UP) was still being tracked down; the GPIO1 move itself probably wasn't the fix, granting `PCNS` was, but it's confirmed working as-is so left unchanged |
-| LCD RESET | A4 | P0_15 | manual GPIO |
-| LCD LED (backlight) | A5 | P0_23 | manual GPIO, driven high in `LCD_Init()` |
-| SD_CS | D10 | P0_27 | **real hardware** LPSPI1 PCS0 - SD-only, see below |
-| T_CS | D9 | P0_10 | manual GPIO, touch-only |
-| T_IRQ | D8 | P0_28 | manual GPIO input (pull-up enabled), active low when touched |
-| VCC, GND | board power header | direct | 3.3V or 5V per the panel's regulator — check the specific module |
+| SCK (TFT / SD / Touch / RFID / ESP32) | D13 | P0_25 | shared bus, hardware LPSPI1 SCK |
+| MOSI (TFT / SD / Touch / RFID / ESP32) | D11 | P0_24 | shared bus, hardware LPSPI1 SDO (MCU→devices) |
+| MISO (TFT / SD / Touch / RFID / ESP32) | D12 | P0_26 | shared bus, hardware LPSPI1 SDI (devices→MCU, pull-up enabled) |
+| TFT CS | D10 | P0_27 | manual GPIO, LCD-only |
+| TFT DC | D5 | P1_21 | manual GPIO, command/data select |
+| TFT RESET | D7 | P0_31 | manual GPIO, reset active low |
+| TFT LED (backlight) | VDD_3V3 | direct | hardwired to 3.3V power rail on baseboard |
+| Touch T_CS | D4 | P0_30 | manual GPIO, touch-only |
+| Touch T_IRQ | D3 | P1_23 | manual GPIO input (pull-up enabled), active low when touched |
+| MicroSD SD_CS | A3 | P0_22 | manual GPIO, active low |
+| RFID SS / CS | D8 | P0_28 | manual GPIO, MFRC522 chip select |
+| RFID RST | A2 | P0_14 | manual GPIO, MFRC522 reset |
+| RFID IRQ | A4 | P0_15 | manual GPIO input, MFRC522 interrupt |
+| ESP32 CS | A5 | P0_23 | manual GPIO, ESP32 SPI chip select |
+| INA228 SCL | SCL | P4_1 | FC2 I2C SCL |
+| INA228 SDA | SDA | P4_0 | FC2 I2C SDA |
+| INA228 ALRT | D2 | P0_29 | manual GPIO input, alert line |
+| Servo PWM | D9 | P0_10 | CT0_MAT0 / PWM signal |
+| VCC, GND | board power header | direct | 3.3V and 5.0V power rails per module |
 
-Only the microSD slot uses the peripheral's real hardware chip-select
-(PCS0/D10) — `SDSPI_Init()` needs to flip its active polarity at runtime,
-which only works through actual PCS hardware. The LCD and touch each use a
-plain GPIO pin for CS instead, toggled manually around every transfer.
 
 **MADCTL (`0x36`) in `lcd_spi_hw.c`'s `LCD_InitPanel()`**: `MV=1`
 (rotation) confirmed correct on real hardware. `BGR` was wrong for this

@@ -47,6 +47,13 @@ static void AiInferenceTask(void *pvParameters)
         /* Convert to the wire-safe, pointer-free shape (ipc_layout.h) -
          * result.boxes[i].label is a `const char *` into core0's own
          * flash, not portable data to hand to core1 as-is. */
+        if (result.valid && result.boxCount > 0)
+        {
+            PRINTF("\r\n========================================\r\n");
+            PRINTF(">>> [CORE0 AI] [FACE DETECTED] %u face(s) found! <<<\r\n", (unsigned)result.boxCount);
+            PRINTF("========================================\r\n");
+        }
+
         ai_ipc_result_t ipcResult = {0};
         ipcResult.valid    = result.valid;
         ipcResult.boxCount = (result.boxCount > AI_IPC_MAX_BOXES) ? AI_IPC_MAX_BOXES : result.boxCount;
@@ -75,13 +82,24 @@ int main(void)
     PRINTF("\r\nCamera_AI_Test1 - core0 (dual-core Stage 5: AI inference)\r\n");
 
     /* core1 has no SAU (always Non-Secure) - grant it GPIO access to its
-     * own LCD pins before releasing it below, or its writes silently do
-     * nothing (see WORKLOG.md, KNOWLEDGE.md §9). Pin numbers must match
-     * core1/app.h - can't include that header from here. */
-    GPIO0->PCNS |= GPIO_PCNS_NSE15_MASK  /* LCD RST, P0_15 */
-                 | GPIO_PCNS_NSE22_MASK  /* LCD CS,  P0_22 */
-                 | GPIO_PCNS_NSE23_MASK; /* LCD BLK, P0_23 */
-    GPIO1->PCNS |= GPIO_PCNS_NSE23_MASK; /* LCD DC,  P1_23 (Arduino D3) */
+     * own LCD, SD, Touch, and baseboard peripheral pins before releasing it below,
+     * or its writes silently do nothing (see WORKLOG.md, KNOWLEDGE.md §9).
+     * Pin numbers match app.h. */
+    GPIO0->PCNS |= GPIO_PCNS_NSE27_MASK  /* LCD CS,   P0_27 (Arduino D10) */
+                 | GPIO_PCNS_NSE31_MASK  /* LCD RST,  P0_31 (Arduino D7) */
+                 | GPIO_PCNS_NSE22_MASK  /* SD CS,    P0_22 (Arduino A3) */
+                 | GPIO_PCNS_NSE30_MASK  /* Touch CS, P0_30 (Arduino D4) */
+                 | GPIO_PCNS_NSE28_MASK  /* RFID CS,  P0_28 (Arduino D8) */
+                 | GPIO_PCNS_NSE14_MASK  /* RFID RST, P0_14 (Arduino A2) */
+                 | GPIO_PCNS_NSE15_MASK  /* RFID IRQ, P0_15 (Arduino A4) */
+                 | GPIO_PCNS_NSE23_MASK  /* ESP32 CS, P0_23 (Arduino A5) */
+                 | GPIO_PCNS_NSE29_MASK  /* INA ALRT, P0_29 (Arduino D2) */
+                 | GPIO_PCNS_NSE10_MASK; /* Servo,    P0_10 (Arduino D9) */
+
+    GPIO1->PCNS |= GPIO_PCNS_NSE21_MASK  /* LCD DC,    P1_21 (Arduino D5) */
+                 | GPIO_PCNS_NSE23_MASK  /* Touch IRQ, P1_23 (Arduino D3) */
+                 | GPIO_PCNS_NSE2_MASK;  /* Blue LED,  P1_2 */
+
 
 #ifdef CORE1_IMAGE_COPY_TO_RAM
     uint32_t core1_image_size = get_core1_image_size();
