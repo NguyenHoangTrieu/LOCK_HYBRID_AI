@@ -8,6 +8,30 @@ what happened" history, kept separate so README doesn't get cluttered.
 > Older history (camera/LCD/USB bring-up, all of that now stable/working -
 > see README.md's "History" section for the summary) was trimmed from this
 > file to keep it focused on the current, unresolved problem below.
+## Memory Optimization (RAM & Flash) & LCD FPS Acceleration (2026-10-18)
+
+### Summary of Improvements & Confirmed Hardware Results
+
+1. **LCD FPS Boost (8-10 FPS -> 10-11 FPS)**:
+   - **Xung nhịp SPI1 37.5 MHz**: Trong `hardware_init.c`, chuyển nguồn clock của `FLEXCOMM1` từ `FRO_HF` (48 MHz -> tối đa 24 MHz SPI) sang `PLL0 / 2 = 75 MHz` (`kPLL0_to_PLLCLKDIV` div=2, `kPLL_DIV_to_FLEXCOMM1` div=1). Đặt `LCD_SPI_BAUDRATE_HZ = 37500000U` (37.5 MHz), rút ngắn thời gian truyền vật lý 1 frame 320x240 RGB565 từ **51.2 ms xuống 32.8 ms**.
+   - **eDMA Chunks 16 KB**: Tăng `LCD_SPI_CHUNK_PIXELS` từ 1024 lên **8192 pixels (16 KB)** đặt trong `.sramx_bss`, giảm số lần gọi ngắt và thiết lập descriptor eDMA mỗi frame từ **75 lần xuống 10 lần**.
+   - **Tối ưu đảo byte 32-bit hardware**: Dùng lệnh hợp ngữ `__REV16()` của Cortex-M33 trong `LCD_PushPixelsOpen()` để đảo byte 2 pixel RGB565 cùng lúc trên từ 32-bit.
+   - **LPSPI1 Delay & Cache**: Cache baudrate trong `SPI1_BUS_SetBaudRate()` để loại bỏ việc reconfigure thanh ghi mỗi frame, và đặt `kLPSPI_BetweenTransfer = 0` khi chạy $\ge 10\text{ MHz}$.
+   - **Bỏ `memset(153.6 KB)` mỗi frame**: Trong `CAMERA_CAPTURE_Reinit()`, chỉ khởi động lại SmartDMA mà không xóa 153,600 byte frame buffer và không nạp lại firmware (tiết kiệm ~3–4 ms CPU mỗi frame).
+
+2. **Tối ưu RAM & Flash (`m_sramx` & `m_data`)**:
+   - Thêm section `.sramx_bss (NOLOAD)` trong `MCXN947_cm33_core0_singlecore.ld` từ địa chỉ `0x04001000` (giữ nguyên 4 KB đầu `0x04000000..0x04001000` cho SmartDMA camera firmware).
+   - Di dời các cấu trúc tĩnh: `s_pixelSwapBuf` (16 KB), `s_candidates` (640 B), `s_fs` (560 B), `s_card` (100 B), `s_host` (24 B), `s_smartdmaStack` (128 B), `s_lpspiDmaHandle` (236 B), `s_dmaTxHandle`, `s_dmaRxHandle` sang `m_sramx`. Tự động zero-init vùng này trong `BOARD_InitHardware()`.
+   - Thay `static uint16_t s_clearLine[320]` (640 B) trong `DEMO_ClearScreen()` bằng stack buffer.
+   - **Kết quả RAM `m_data`**: Giảm từ `413,072 B` (97.91%) xuống **`408,328 B` (96.79%)**, giải phóng thêm **+4,744 B** vùng nhớ chính SRAM0..8.
+   - **Kết quả Flash `m_text`**: Bọc ảnh test `couple_COCO_128_128_rgb.h` sau `AI_ENABLE_BOOT_SELFTEST`, giảm Flash từ `258,976 B` xuống **`200,400 B`** (tiết kiệm **57.2 KB Flash**).
+
+3. **Tối ưu NPU Inference Hot-path & Nâng Threshold 65%**:
+   - **Bảng tra kênh màu RGB565**: Tạo sẵn 2 bảng `s_lutR5B5[32]` và `s_lutG6[64]`, thay thế hoàn toàn 3 phép chia số nguyên (`/ 31U`, `/ 63U`, `/ 31U`) ở mỗi pixel trong vòng lặp 16,384 pixel của `SampleCropTensor()`. Chuyển phép tỉ lệ tọa độ sang dịch bit `>> 7U`.
+   - **Giảm probe đa góc xoay lúc rỗi**: Khi chưa có khuôn mặt, chỉ probe góc xoay phụ mỗi 32 frame (thay vì mỗi frame), giữ NPU inference ổn định ở mức **16 ms**.
+   - **Nâng ngưỡng phát hiện**: Cập nhật `NPU_MODEL_DETECTION_THRESHOLD` từ `0.58f` lên **`0.65f` (65%)** theo thực nghiệm người dùng, lọc bỏ các box biên nhiễu trong khi khuôn mặt người thật nhận diện rất nhạy và chuẩn xác (score 80% – 99%).
+   - **Tốc độ thực tế trên board**: Đạt **10–11 FPS** liên tục khi hiển thị LCD kèm AI box overlay.
+
 ## Single-core NPU Face Detection Bring-Up & Dynamic Scheduler (2026-10-17)
 
 ### Summary of Symptoms, Root Causes & Fixes
