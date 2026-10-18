@@ -83,7 +83,7 @@ flash_firmware() {
     ok "Nạp firmware thành công!"
 
     say "[4/4] Khởi động lại vi điều khiển..."
-    "$VENV_BIN/pyocd" reset -t "$TARGET" -O pack.debug_sequences.enable=false
+    "$VENV_BIN/pyocd" cmd -t "$TARGET" -O pack.debug_sequences.enable=false -M attach -c "ww 0xE000ED0C 0x05FA0004" >/dev/null 2>&1 || true
     ok "Board đã khởi động lại và đang chạy!"
 }
 
