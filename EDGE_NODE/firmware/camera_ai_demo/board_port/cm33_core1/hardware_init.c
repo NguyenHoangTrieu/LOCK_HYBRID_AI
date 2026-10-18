@@ -63,9 +63,11 @@ void BOARD_InitHardware(void)
     CLOCK_SetClkDiv(kCLOCK_DivFlexcom7Clk, 1u);
 
     /* Shared LPSPI1 bus (Arduino D10..D13 - LCD/microSD/touch, see
-     * source/spi1_bus.h). FRO_HF (48MHz), not FRO12M - see
-     * board_port/cm33_core0/hardware_init.c's comment (WORKLOG.md) for why. */
-    CLOCK_AttachClk(kFRO_HF_DIV_to_FLEXCOMM1);
+     * source/spi1_bus.h). Route PLL0 (150MHz) / 2 = 75MHz through PLL_DIV
+     * to FLEXCOMM1 for 37.5MHz SPI LCD transfers. */
+    CLOCK_AttachClk(kPLL0_to_PLLCLKDIV);
+    CLOCK_SetClkDiv(kCLOCK_DivPllClk, 2U);
+    CLOCK_AttachClk(kPLL_DIV_to_FLEXCOMM1);
     CLOCK_SetClkDiv(kCLOCK_DivFlexcom1Clk, 1u);
 
     /* Route camera VSYNC/HSYNC/PCLK (P0_4/P0_11/P0_5) to the SmartDMA. */

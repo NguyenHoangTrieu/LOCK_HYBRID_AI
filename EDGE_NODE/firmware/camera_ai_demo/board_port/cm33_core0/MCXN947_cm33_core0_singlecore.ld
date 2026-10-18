@@ -199,7 +199,21 @@ SECTIONS
   .ARM.attributes 0 : { *(.ARM.attributes) }
 
   ASSERT(__HeapLimit <= (ORIGIN(m_data) + LENGTH(m_data)), "region m_data overflowed with heap")
-  
+
+  /* 0x04000000..0x04001000 (4 KB) is reserved for SmartDMA camera firmware
+   * loaded at runtime via SMARTDMA_InstallFirmware(). The remaining 92 KB of
+   * m_sramx (0x04001000..0x04018000) is free for NOLOAD scratch/DMA buffers. */
+  .sramx_bss (NOLOAD) :
+  {
+    . = ORIGIN(m_sramx) + 0x1000;
+    . = ALIGN(16);
+    __sramx_bss_start__ = .;
+    *(.sramx_bss)
+    *(.sramx_bss*)
+    . = ALIGN(16);
+    __sramx_bss_end__ = .;
+  } > m_sramx
+
   .model :
   {
     *(.model)

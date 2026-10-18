@@ -23,14 +23,12 @@
 #include "spi1_bus.h"
 #include <stdbool.h>
 
-/* One 320x240 RGB565 frame is 153,600 bytes = 1,228,800 bits - at 24MHz
- * that's a ~51ms wire-time floor (~19-20fps best case) no amount of
- * software can beat. Actual measured fps (7) is short of that because the
- * CPU-polled transfer path still has real per-byte overhead on top - see
- * WORKLOG.md. If the image comes back glitchy/torn (this project's wiring
- * is breadboard-based), lower this toward 2-6MHz first. */
+/* One 320x240 RGB565 frame is 153,600 bytes = 1,228,800 bits - at 37.5MHz
+ * (PLL0 150MHz / 2 = 75MHz source clock, / 2 LPSPI divider) that's a
+ * ~32.8ms wire-time floor (~30fps best case). If the image comes back
+ * glitchy/torn on long jumper wires, lower this toward 24MHz. */
 #ifndef LCD_SPI_BAUDRATE_HZ
-#define LCD_SPI_BAUDRATE_HZ 24000000U
+#define LCD_SPI_BAUDRATE_HZ 37500000U
 #endif
 
 static void LCD_SetCSPin(bool set) {
@@ -191,18 +189,35 @@ void LCD_SetWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
  * into this scratch buffer before each chunk. SPI1_BUS_PrepareDMA() runs
  * once per call, not once per chunk - the per-call setup cost otherwise
  * dominated fps (see WORKLOG.md). */
+#ifdef DUALCORE_RTOS
 #define LCD_SPI_CHUNK_PIXELS 1024U
-static uint8_t s_pixelSwapBuf[LCD_SPI_CHUNK_PIXELS * 2U];
+static uint8_t s_pixelSwapBuf[LCD_SPI_CHUNK_PIXELS * 2U] __attribute__((aligned(4)));
+#else
+#define LCD_SPI_CHUNK_PIXELS 8192U
+static uint8_t s_pixelSwapBuf[LCD_SPI_CHUNK_PIXELS * 2U]
+    __attribute__((section(".sramx_bss"), aligned(4)));
+#endif
 
 void LCD_PushPixelsOpen(const uint16_t *pixels, uint32_t count) {
   (void)SPI1_BUS_PrepareDMA(kLPSPI_MasterPcs1 | kLPSPI_MasterPcsContinuous);
 
   while (count > 0U) {
     uint32_t chunk = (count > LCD_SPI_CHUNK_PIXELS) ? LCD_SPI_CHUNK_PIXELS : count;
+    uint32_t i = 0U;
 
-    for (uint32_t i = 0; i < chunk; i++) {
-      s_pixelSwapBuf[2U * i]      = (uint8_t)(pixels[i] >> 8);
-      s_pixelSwapBuf[2U * i + 1U] = (uint8_t)(pixels[i] & 0xFFU);
+    if (((uintptr_t)pixels & 3U) == 0U) {
+      const uint32_t *src32 = (const uint32_t *)(const void *)pixels;
+      uint32_t *dst32 = (uint32_t *)(void *)s_pixelSwapBuf;
+      uint32_t pairs = chunk >> 1U;
+      for (uint32_t p = 0U; p < pairs; p++) {
+        dst32[p] = __REV16(src32[p]);
+      }
+      i = pairs << 1U;
+    }
+
+    uint16_t *dst16 = (uint16_t *)(void *)s_pixelSwapBuf;
+    for (; i < chunk; i++) {
+      dst16[i] = (uint16_t)__REV16(pixels[i]);
     }
     (void)SPI1_BUS_TransferBytesDMA(s_pixelSwapBuf, chunk * 2U);
 

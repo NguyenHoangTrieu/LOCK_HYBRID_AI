@@ -49,8 +49,13 @@
  * seconds is generous headroom, not a tight budget. */
 #define SD_SPI_INIT_TIMEOUT_MS 2000U
 
+#ifdef DUALCORE_RTOS
 static sdspi_host_t s_host;
 static sdspi_card_t s_card;
+#else
+static sdspi_host_t s_host __attribute__((section(".sramx_bss"), aligned(4)));
+static sdspi_card_t s_card __attribute__((section(".sramx_bss"), aligned(4)));
+#endif
 static bool s_cardReady = false;
 static uint32_t s_initDeadlineCycle;
 static bool s_initTimedOut;

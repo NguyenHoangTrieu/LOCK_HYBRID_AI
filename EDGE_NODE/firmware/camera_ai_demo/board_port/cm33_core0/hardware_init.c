@@ -16,19 +16,17 @@
 #include "fsl_inputmux.h"
 #include "fsl_spc.h"
 
-#ifndef DUALCORE_RTOS
+#if !defined(DUALCORE_RTOS) && (!defined(DEMO_USB_STREAM_DISABLE) || !DEMO_USB_STREAM_DISABLE)
 /* USB Video Class streaming is abandoned and not carried forward into the
- * dual-core RTOS build - see ARCHITECTURE.md Sec.4/WORKLOG.md. Guarded so
- * this file can be shared between the legacy single-core build and the
- * dual-core Stage 1+ bring-up (-DDUALCORE_RTOS=1, see CMakeLists.txt)
- * without needing source/usb/ on the include path in the latter. */
+ * dual-core RTOS build or when DEMO_USB_STREAM_DISABLE=1 - see
+ * ARCHITECTURE.md Sec.4/WORKLOG.md. */
 #include "usb_device_config.h"
 #include "usb.h"
 #include "usb_device.h"
 #include "usb_device_class.h"
 #include "usb_video_camera.h"
 #include "usb_phy.h"
-#endif /* DUALCORE_RTOS */
+#endif /* !DUALCORE_RTOS && !DEMO_USB_STREAM_DISABLE */
 
 /*
  * CONFIRMED (see WORKLOG.md): SmartDMA camera capture only runs reliably
@@ -76,7 +74,7 @@ void BOARD_SetRegulatorsOverdriveVoltage(void)
     }
 }
 
-#ifndef DUALCORE_RTOS
+#if !defined(DUALCORE_RTOS) && (!defined(DEMO_USB_STREAM_DISABLE) || !DEMO_USB_STREAM_DISABLE)
 /*
  * USB High-Speed (EHCI + dedicated HS PHY) bring-up for the UVC camera
  * stream (source/usb/usb_video_camera.c). Copied near-verbatim from the
@@ -141,10 +139,19 @@ void USB_DeviceIsrEnable(void)
     NVIC_SetPriority((IRQn_Type)irqNumber, USB_DEVICE_INTERRUPT_PRIORITY);
     EnableIRQ((IRQn_Type)irqNumber);
 }
-#endif /* DUALCORE_RTOS */
+#endif /* !DUALCORE_RTOS && !DEMO_USB_STREAM_DISABLE */
 
 void BOARD_InitHardware(void)
 {
+#ifndef DUALCORE_RTOS
+    extern uint32_t __sramx_bss_start__[];
+    extern uint32_t __sramx_bss_end__[];
+    for (uint32_t *p = __sramx_bss_start__; p < __sramx_bss_end__; p++)
+    {
+        *p = 0U;
+    }
+#endif
+
     BOARD_InitBootPins();
     BOARD_InitBootClocks();
     BOARD_InitDebugConsole();
@@ -187,12 +194,12 @@ void BOARD_InitHardware(void)
     CLOCK_SetClkDiv(kCLOCK_DivFlexcom7Clk, 1u);
 
     /* Shared LPSPI1 bus (Arduino D10..D13 - LCD/microSD/touch, see
-     * source/spi1_bus.h). Just attach+divide the source clock - spi1_bus.c
-     * gates/resets the peripheral itself. FRO_HF (48MHz), not FRO12M -
-     * FRO12M caps the achievable SPI baud at ~6MHz (confirmed on real
-     * hardware, see WORKLOG.md), too slow for a usable LCD frame rate.
-     * FRO_HF is already running (feeds PLL0) and unused elsewhere. */
-    CLOCK_AttachClk(kFRO_HF_DIV_to_FLEXCOMM1);
+     * source/spi1_bus.h). Route PLL0 (150MHz) / 2 = 75MHz through PLL_DIV
+     * to FLEXCOMM1 so LPSPI1 can run at 37.5MHz (75MHz / 2) for the LCD
+     * instead of being capped at 24MHz (FRO_HF 48MHz / 2). */
+    CLOCK_AttachClk(kPLL0_to_PLLCLKDIV);
+    CLOCK_SetClkDiv(kCLOCK_DivPllClk, 2U);
+    CLOCK_AttachClk(kPLL_DIV_to_FLEXCOMM1);
     CLOCK_SetClkDiv(kCLOCK_DivFlexcom1Clk, 1u);
 
     /* Route camera VSYNC/HSYNC/PCLK (P0_4/P0_11/P0_5) to the SmartDMA. */

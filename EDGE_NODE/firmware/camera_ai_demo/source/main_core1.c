@@ -42,18 +42,21 @@
  * since the two builds don't share source files, only headers/drivers. */
 static void DEMO_ClearScreen(uint16_t color)
 {
-    static uint16_t s_clearLine[DEMO_PANEL_WIDTH];
-    for (uint16_t i = 0U; i < DEMO_PANEL_WIDTH; i++)
+    uint16_t clearChunk[64];
+    for (uint16_t i = 0U; i < 64U; i++)
     {
-        s_clearLine[i] = color;
+        clearChunk[i] = color;
     }
     /* Whole multi-call sequence must be atomic against other bus users -
      * see spi1_bus.h. */
     SPI1_BUS_Lock();
     LCD_SetWindow(0U, 0U, DEMO_PANEL_WIDTH - 1U, DEMO_PANEL_HEIGHT - 1U);
-    for (uint16_t row = 0U; row < DEMO_PANEL_HEIGHT; row++)
+    uint32_t remaining = (uint32_t)DEMO_PANEL_WIDTH * DEMO_PANEL_HEIGHT;
+    while (remaining > 0U)
     {
-        LCD_PushPixelsOpen(s_clearLine, DEMO_PANEL_WIDTH);
+        uint32_t n = (remaining > 64U) ? 64U : remaining;
+        LCD_PushPixelsOpen(clearChunk, n);
+        remaining -= n;
     }
     LCD_EndWindow();
     SPI1_BUS_Unlock();

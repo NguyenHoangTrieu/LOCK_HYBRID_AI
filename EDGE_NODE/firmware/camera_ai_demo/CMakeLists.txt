@@ -252,6 +252,11 @@ if(DUALCORE_RTOS)
                     source/ai/model_runner.h
                     source/ai/model_runner_npu.cpp
         )
+        set_source_files_properties(
+            ${CMAKE_CURRENT_SOURCE_DIR}/source/main_core0.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/source/ai/model_runner_npu.cpp
+            PROPERTIES COMPILE_OPTIONS "-O2"
+        )
         mcux_add_include(
             INCLUDES source source/shared source/ai
         )
@@ -442,8 +447,25 @@ endif()
 option(USB_STREAM_DIAGNOSTIC_DISABLE "Skip USB bring-up entirely - camera+AI loop only, no USB (USB streaming is abandoned, see WORKLOG.md)" ON)
 if(USB_STREAM_DIAGNOSTIC_DISABLE)
     mcux_add_macro(CC "-DDEMO_USB_STREAM_DISABLE=1")
+    set(USB_BACKEND_SOURCE "")
+    mcux_project_remove_source(
+        BASE_PATH ${SdkRootDirPath}
+        SOURCES middleware/usb/device/usb_device_khci.c
+                middleware/usb/device/usb_device_ehci.c
+                middleware/usb/device/usb_device_dci.c
+                middleware/usb/device/usb_device_ch9.c
+                middleware/usb/device/class/usb_device_class.c
+                middleware/usb/device/class/usb_device_video.c
+                middleware/usb/phy/usb_phy.c
+    )
 else()
     mcux_add_macro(CC "-DDEMO_USB_STREAM_DISABLE=0")
+    set(USB_BACKEND_SOURCE
+        source/usb/usb_device_descriptor.c
+        source/usb/usb_device_descriptor.h
+        source/usb/usb_video_camera.c
+        source/usb/usb_video_camera.h
+    )
 endif()
 
 # Diagnostic-only build: skip AI entirely and stream the raw camera feed
@@ -479,15 +501,14 @@ endif()
 option(AI_MODEL_USE_NPU "Run inference on the Neutron NPU (model_runner_npu.cpp) instead of CPU+CMSIS-NN via the Edge Impulse SDK (model_runner.cpp) - see WORKLOG.md" ON)
 if(AI_MODEL_USE_NPU)
     set(AI_MODEL_RUNNER_SOURCE source/ai/model_runner_npu.cpp)
-    # main.c uses this to skip allocating the CPU-path's m_data overflow
-    # scratch pool (source/ai/ei_sramx_alloc.c is compiled unconditionally
-    # into both builds, but only model_runner.cpp's ei_run_classifier()
-    # call actually uses it) - that pool would otherwise sit there unused,
-    # competing with model_runner_npu.cpp's own (much larger, for this
-    # 96x96 model) static tensor arena for the same m_data budget.
+    set(EI_PORTING_SOURCE "")
     mcux_add_macro(CC "-DDEMO_AI_MODEL_USE_NPU=1" CX "-DDEMO_AI_MODEL_USE_NPU=1")
 else()
     set(AI_MODEL_RUNNER_SOURCE source/ai/model_runner.cpp)
+    set(EI_PORTING_SOURCE
+        source/ai/ei_sramx_alloc.c
+        source/ai/ei_debug_porting.c
+    )
     mcux_add_macro(CC "-DDEMO_AI_MODEL_USE_NPU=0" CX "-DDEMO_AI_MODEL_USE_NPU=0")
 endif()
 
@@ -510,12 +531,8 @@ mcux_add_source(
             ${AI_MODEL_RUNNER_SOURCE}
             source/ai/model_runner.h
             source/ai/model_data.h
-            source/ai/ei_sramx_alloc.c
-            source/ai/ei_debug_porting.c
-            source/usb/usb_device_descriptor.c
-            source/usb/usb_device_descriptor.h
-            source/usb/usb_video_camera.c
-            source/usb/usb_video_camera.h
+            ${EI_PORTING_SOURCE}
+            ${USB_BACKEND_SOURCE}
             source/storage/sd_spi_disk.c
             source/storage/sd_spi_disk.h
             source/storage/snapshot.c
@@ -764,6 +781,17 @@ if(LCD_ARDUINO_HEADER_BITBANG)
         PROPERTIES COMPILE_OPTIONS "-O2"
     )
 endif()
+
+set_source_files_properties(
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/spi1_bus.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/camera/camera_capture.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/display/bbox_overlay.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/storage/sd_spi_disk.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/storage/snapshot.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/${AI_MODEL_RUNNER_SOURCE}
+    PROPERTIES COMPILE_OPTIONS "-O2"
+)
 
 # So source/main.c can #include "camera_capture.h" etc. by simple name.
 # NOTE: mcux_add_include() joins INCLUDES onto CMAKE_CURRENT_LIST_DIR itself

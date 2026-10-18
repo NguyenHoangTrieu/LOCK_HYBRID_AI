@@ -20,7 +20,15 @@
 
 #include "neutron/ultraface_slim_ultraslim_npu16_tflite.h"
 #include "neutron/ultraface_slim_ultraslim_npu16_tflite_info.h"
+#if defined(AI_ENABLE_BOOT_SELFTEST) && AI_ENABLE_BOOT_SELFTEST
 #include "neutron/couple_COCO_128_128_rgb.h"
+#endif
+
+#ifdef DUALCORE_RTOS
+#define AI_SRAMX_BSS
+#else
+#define AI_SRAMX_BSS __attribute__((section(".sramx_bss"), aligned(4)))
+#endif
 
 #define NPU_MODEL_INPUT_WIDTH  128U
 #define NPU_MODEL_INPUT_HEIGHT 128U
@@ -41,7 +49,7 @@ typedef struct
 } candidate_box_t;
 
 #define MAX_CANDIDATES 32
-static candidate_box_t s_candidates[MAX_CANDIDATES];
+static candidate_box_t s_candidates[MAX_CANDIDATES] AI_SRAMX_BSS;
 static uint32_t s_candidateCount;
 
 static void AI_MODEL_InitTiming(void)
@@ -51,19 +59,34 @@ static void AI_MODEL_InitTiming(void)
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
-static int8_t s_inputLut[256];
+/* Direct RGB565 channel -> INT8 quantized tensor lookup tables.
+ * Avoids 3 integer multiplications + 3 integer divisions (/31, /63, /31)
+ * per pixel across 16,384 pixels every frame. */
+static int8_t s_lutR5B5[32] AI_SRAMX_BSS;
+static int8_t s_lutG6[64] AI_SRAMX_BSS;
+
+static int8_t QuantizeChannelByte(uint32_t val8, float scale, int32_t zp)
+{
+    const float stdVal = (float)ULTRAFACE_INPUT_STD;
+    const float meanVal = (float)ULTRAFACE_INPUT_MEAN;
+    float real = ((float)val8 - meanVal) / stdVal;
+    int32_t q = (int32_t)roundf(real / scale) + zp;
+    if (q < -128) q = -128;
+    if (q > 127) q = 127;
+    return (int8_t)q;
+}
 
 static void InitInputLut(float scale, int32_t zp)
 {
-    float stdVal = (float)ULTRAFACE_INPUT_STD;
-    float meanVal = (float)ULTRAFACE_INPUT_MEAN;
-    for (int i = 0; i < 256; i++)
+    for (uint32_t v5 = 0U; v5 < 32U; v5++)
     {
-        float real = ((float)i - meanVal) / stdVal;
-        int32_t q = (int32_t)roundf(real / scale) + zp;
-        if (q < -128) q = -128;
-        if (q > 127) q = 127;
-        s_inputLut[i] = (int8_t)q;
+        uint32_t val8 = (v5 * 255U) / 31U;
+        s_lutR5B5[v5] = QuantizeChannelByte(val8, scale, zp);
+    }
+    for (uint32_t v6 = 0U; v6 < 64U; v6++)
+    {
+        uint32_t val8 = (v6 * 255U) / 63U;
+        s_lutG6[v6] = QuantizeChannelByte(val8, scale, zp);
     }
 }
 
@@ -113,12 +136,16 @@ extern "C" void AI_MODEL_Init(void)
            inT ? (int)(inT->params.scale * 10000.0f) : 0, inT ? inT->params.zero_point : 0,
            outT ? (int)(outT->params.scale * 10000.0f) : 0, outT ? outT->params.zero_point : 0);
 
+    float inScale = (inT && inT->params.scale > 0.0f) ? inT->params.scale : 0.0078125f;
+    int32_t inZp  = inT ? inT->params.zero_point : 0;
+    InitInputLut(inScale, inZp);
+
+#if defined(AI_ENABLE_BOOT_SELFTEST) && AI_ENABLE_BOOT_SELFTEST
     /* Self-test with known MS COCO couple test image */
-    InitInputLut(inT->params.scale <= 0.0f ? 0.0078125f : inT->params.scale, inT->params.zero_point);
     int8_t *inData = inT->data.int8;
     for (size_t i = 0; i < 128U * 128U * 3U; i++)
     {
-        inData[i] = s_inputLut[couple_COCO_128_128_rgb_data[i]];
+        inData[i] = QuantizeChannelByte(couple_COCO_128_128_rgb_data[i], inScale, inZp);
     }
     TfLiteStatus testInv = s_interpreter->Invoke();
     const int8_t *testOut = outT->data.int8;
@@ -149,6 +176,7 @@ extern "C" void AI_MODEL_Init(void)
         PRINTF("  Max anchor [%d]: c0=%d c1=%d | l=%d t=%d r=%d b=%d\r\n",
                maxAnchor, testOut[b], testOut[b+1], testOut[b+2], testOut[b+3], testOut[b+4], testOut[b+5]);
     }
+#endif
 }
 
 static void SampleCropTensor(const uint16_t *pixels, uint16_t width, uint16_t height,
@@ -159,49 +187,53 @@ static void SampleCropTensor(const uint16_t *pixels, uint16_t width, uint16_t he
     const uint16_t cropLeft = (width > cropSize) ? ((width - cropSize) / 2U) : 0U; /* 40 */
     const uint16_t cropTop  = (height > cropSize) ? ((height - cropSize) / 2U) : 0U; /* 0 */
 
-    for (uint16_t ty = 0; ty < NPU_MODEL_INPUT_HEIGHT; ty++)
+    /* Sample center pixel once outside the hot loop for diagnostic logging */
     {
-        for (uint16_t tx = 0; tx < NPU_MODEL_INPUT_WIDTH; tx++)
+        uint16_t midSx = cropLeft + (cropSize >> 1U);
+        uint16_t midSy = cropTop  + (cropSize >> 1U);
+        uint16_t px = pixels[(uint32_t)midSy * width + midSx];
+        if (outMidPx) *outMidPx = px;
+        if (outMidR)  *outMidR  = (uint8_t)(((px >> 11U) & 0x1FU) * 255U / 31U);
+        if (outMidG)  *outMidG  = (uint8_t)(((px >> 5U)  & 0x3FU) * 255U / 63U);
+        if (outMidB)  *outMidB  = (uint8_t)((px & 0x1FU) * 255U / 31U);
+    }
+
+    int8_t *dst = inputData;
+
+    for (uint32_t ty = 0U; ty < NPU_MODEL_INPUT_HEIGHT; ty++)
+    {
+        uint32_t scaledTy    = (ty * cropSize) >> 7U;
+        uint32_t scaledInvTy = ((127U - ty) * cropSize) >> 7U;
+
+        for (uint32_t tx = 0U; tx < NPU_MODEL_INPUT_WIDTH; tx++)
         {
-            uint16_t sx, sy;
+            uint32_t sx, sy;
             switch (rot)
             {
                 case 2: /* 180 deg upside-down */
-                    sx = cropLeft + (uint16_t)(((uint32_t)(127U - tx) * cropSize) / NPU_MODEL_INPUT_WIDTH);
-                    sy = cropTop  + (uint16_t)(((uint32_t)(127U - ty) * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    sx = cropLeft + (((127U - tx) * cropSize) >> 7U);
+                    sy = cropTop  + scaledInvTy;
                     break;
                 case 1: /* 90 deg CW */
-                    sx = cropLeft + (uint16_t)(((uint32_t)ty * cropSize) / NPU_MODEL_INPUT_HEIGHT);
-                    sy = cropTop  + (uint16_t)(((uint32_t)(127U - tx) * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    sx = cropLeft + scaledTy;
+                    sy = cropTop  + (((127U - tx) * cropSize) >> 7U);
                     break;
                 case 3: /* 270 deg CW / 90 deg CCW */
-                    sx = cropLeft + (uint16_t)(((uint32_t)(127U - ty) * cropSize) / NPU_MODEL_INPUT_HEIGHT);
-                    sy = cropTop  + (uint16_t)(((uint32_t)tx * cropSize) / NPU_MODEL_INPUT_WIDTH);
+                    sx = cropLeft + scaledInvTy;
+                    sy = cropTop  + ((tx * cropSize) >> 7U);
                     break;
                 case 0: /* 0 deg normal */
                 default:
-                    sx = cropLeft + (uint16_t)(((uint32_t)tx * cropSize) / NPU_MODEL_INPUT_WIDTH);
-                    sy = cropTop  + (uint16_t)(((uint32_t)ty * cropSize) / NPU_MODEL_INPUT_HEIGHT);
+                    sx = cropLeft + ((tx * cropSize) >> 7U);
+                    sy = cropTop  + scaledTy;
                     break;
             }
 
-            uint16_t px = pixels[(uint32_t)sy * width + sx];
-            uint8_t r = (uint8_t)(((px >> 11U) & 0x1FU) * 255U / 31U);
-            uint8_t g = (uint8_t)(((px >> 5U)  & 0x3FU) * 255U / 63U);
-            uint8_t b = (uint8_t)((px & 0x1FU) * 255U / 31U);
-
-            if (rot == 0 && ty == (NPU_MODEL_INPUT_HEIGHT / 2U) && tx == (NPU_MODEL_INPUT_WIDTH / 2U))
-            {
-                if (outMidPx) *outMidPx = px;
-                if (outMidR)  *outMidR = r;
-                if (outMidG)  *outMidG = g;
-                if (outMidB)  *outMidB = b;
-            }
-
-            size_t base = ((size_t)ty * NPU_MODEL_INPUT_WIDTH + tx) * 3U;
-            inputData[base + 0U] = s_inputLut[r];
-            inputData[base + 1U] = s_inputLut[g];
-            inputData[base + 2U] = s_inputLut[b];
+            uint16_t px = pixels[sy * width + sx];
+            dst[0] = s_lutR5B5[(px >> 11U) & 0x1FU];
+            dst[1] = s_lutG6[(px >> 5U) & 0x3FU];
+            dst[2] = s_lutR5B5[px & 0x1FU];
+            dst += 3;
         }
     }
 }
@@ -271,9 +303,8 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width, ui
 
     /* Dynamic fast rotation scheduler:
      * Primary physical orientation on J9 is rot=3 (270 deg CW).
-     * If s_activeRot finds a face, we stop immediately (16ms).
-     * If no face is found, we run at most ONE alternative rotation round-robin.
-     * Total inference is 16ms (active) or 32ms max (idle search), keeping FPS >= 8-10. */
+     * Runs 1 NPU pass (16ms) per frame normally; probes an alternative
+     * rotation once every 32 idle frames so idle FPS stays high (~16-18 FPS). */
     static int s_activeRot = 3; /* 270 deg default */
     static int s_altStep = 0;
     const int allRots[4] = {3, 0, 2, 1};
@@ -282,9 +313,9 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width, ui
     int numRotsToTry = 1;
     rotsToTry[0] = s_activeRot;
 
-    /* If no face was found last frame, pick 1 alternative rotation round-robin */
+    /* Probe an alternative rotation occasionally when idle */
     static bool s_lastHadFace = false;
-    if (!s_lastHadFace)
+    if (!s_lastHadFace && ((s_infFrameCount & 31U) == 0U))
     {
         s_altStep = (s_altStep + 1) % 4;
         if (allRots[s_altStep] != s_activeRot)

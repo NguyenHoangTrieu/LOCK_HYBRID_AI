@@ -60,11 +60,18 @@ static volatile uint32_t s_frameCount = 0;
 static uint16_t s_frameBuffer[DEMO_BUFFER_WIDTH * DEMO_BUFFER_HEIGHT];
 #endif
 
+#ifdef DUALCORE_RTOS
+#define CAMERA_SRAMX_BSS
+#else
+#define CAMERA_SRAMX_BSS __attribute__((section(".sramx_bss"), aligned(4)))
+#endif
+
 /* Must be >= 64 bytes per fsl_smartdma_fw.h's own documented minimum -
  * this was once only 32, which caused a real stack overflow once
  * SmartDMA started rebooting every frame (see WORKLOG.md). Sized to 128
  * for real margin, not the bare minimum. */
-static uint8_t s_smartdmaStack[128];
+static uint8_t s_smartdmaStack[128] CAMERA_SRAMX_BSS;
+static smartdma_camera_param_t s_smartdmaParam CAMERA_SRAMX_BSS;
 
 static void CAMERA_CAPTURE_CompleteCallback(void *param) {
   (void)param;
@@ -126,8 +133,6 @@ static void CAMERA_CAPTURE_InitDevice(void) {
 }
 
 static void CAMERA_CAPTURE_InitSmartDma(void) {
-  static smartdma_camera_param_t smartdmaParam;
-
   /* sizeof(s_frameBuffer) would be wrong in the DUALCORE_RTOS build - that
    * name is a pointer-valued macro there (see the declaration above), not
    * an array, so sizeof() would only cover the pointer itself. */
@@ -140,9 +145,9 @@ static void CAMERA_CAPTURE_InitSmartDma(void) {
   NVIC_EnableIRQ(SMARTDMA_IRQn);
   NVIC_SetPriority(SMARTDMA_IRQn, 3);
 
-  smartdmaParam.smartdma_stack = (uint32_t *)s_smartdmaStack;
-  smartdmaParam.p_buffer = (uint32_t *)s_frameBuffer;
-  SMARTDMA_Boot(DEMO_SMARTDMA_API, &smartdmaParam, 0x2);
+  s_smartdmaParam.smartdma_stack = (uint32_t *)s_smartdmaStack;
+  s_smartdmaParam.p_buffer = (uint32_t *)s_frameBuffer;
+  SMARTDMA_Boot(DEMO_SMARTDMA_API, &s_smartdmaParam, 0x2);
 }
 
 void CAMERA_CAPTURE_Init(void) {
@@ -155,7 +160,15 @@ void CAMERA_CAPTURE_Deinit(void) {
   SMARTDMA_Deinit();
 }
 
-void CAMERA_CAPTURE_Reinit(void) { CAMERA_CAPTURE_InitSmartDma(); }
+void CAMERA_CAPTURE_Reinit(void) {
+  SMARTDMA_InitWithoutFirmware();
+  SMARTDMA_InstallCallback(CAMERA_CAPTURE_CompleteCallback, NULL);
+  NVIC_EnableIRQ(SMARTDMA_IRQn);
+
+  s_smartdmaParam.smartdma_stack = (uint32_t *)s_smartdmaStack;
+  s_smartdmaParam.p_buffer = (uint32_t *)s_frameBuffer;
+  SMARTDMA_Boot(DEMO_SMARTDMA_API, &s_smartdmaParam, 0x2);
+}
 
 bool CAMERA_CAPTURE_IsFrameReady(void) { return s_frameReady; }
 

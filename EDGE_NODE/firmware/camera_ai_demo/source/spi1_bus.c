@@ -77,11 +77,19 @@ void SPI1_BUS_UnlockNoPreempt(void)
 #define SPI1_BUS_DMA_RX_CHANNEL 0U
 #define SPI1_BUS_DMA_TX_CHANNEL 1U
 
-static bool s_spi1BusInitialized = false;
+#ifdef DUALCORE_RTOS
+#define SPI1_SRAMX_BSS
+#else
+#define SPI1_SRAMX_BSS __attribute__((section(".sramx_bss"), aligned(16)))
+#endif
 
-static edma_handle_t s_dmaRxHandle;
-static edma_handle_t s_dmaTxHandle;
-static lpspi_master_edma_handle_t s_lpspiDmaHandle;
+static bool s_spi1BusInitialized = false;
+static uint32_t s_lastRequestedBaud = 0U;
+static uint32_t s_lastActualBaud    = 0U;
+
+static edma_handle_t s_dmaRxHandle SPI1_SRAMX_BSS;
+static edma_handle_t s_dmaTxHandle SPI1_SRAMX_BSS;
+static lpspi_master_edma_handle_t s_lpspiDmaHandle SPI1_SRAMX_BSS;
 static volatile bool s_dmaTransferDone = false;
 
 static void SPI1_BUS_DmaCallback(LPSPI_Type *base, lpspi_master_edma_handle_t *handle, status_t status, void *userData)
@@ -126,6 +134,11 @@ void SPI1_BUS_Init(void)
 
 uint32_t SPI1_BUS_SetBaudRate(uint32_t baudRate_Bps)
 {
+    if (baudRate_Bps == s_lastRequestedBaud && s_lastActualBaud != 0U)
+    {
+        return s_lastActualBaud;
+    }
+
     uint32_t prescaler; /* out-only, LPSPI_MasterSetBaudRate() asserts this is non-NULL. */
     uint32_t actualBaud;
 
@@ -143,9 +156,12 @@ uint32_t SPI1_BUS_SetBaudRate(uint32_t baudRate_Bps)
     if (actualBaud != 0U)
     {
         uint32_t delayNs = (1000000000U / actualBaud) / 2U;
+        uint32_t betweenNs = (actualBaud >= 10000000U) ? 0U : delayNs;
         (void)LPSPI_MasterSetDelayTimes(SPI1_BUS_BASEADDR, delayNs, kLPSPI_PcsToSck, SPI1_BUS_CLK_FREQ);
         (void)LPSPI_MasterSetDelayTimes(SPI1_BUS_BASEADDR, delayNs, kLPSPI_LastSckToPcs, SPI1_BUS_CLK_FREQ);
-        (void)LPSPI_MasterSetDelayTimes(SPI1_BUS_BASEADDR, delayNs, kLPSPI_BetweenTransfer, SPI1_BUS_CLK_FREQ);
+        (void)LPSPI_MasterSetDelayTimes(SPI1_BUS_BASEADDR, betweenNs, kLPSPI_BetweenTransfer, SPI1_BUS_CLK_FREQ);
+        s_lastRequestedBaud = baudRate_Bps;
+        s_lastActualBaud    = actualBaud;
     }
 
     LPSPI_Enable(SPI1_BUS_BASEADDR, true);

@@ -71,13 +71,13 @@ static void DEMO_DrawStatusLine(uint16_t lineIndex, const char *paddedLabel, boo
  * repeated LCD_PushPixels() calls - that closes the transfer (CS high)
  * every time, so only the first row would actually reach the panel. */
 static void DEMO_ClearScreen(uint16_t color) {
-  static uint16_t s_clearLine[DEMO_PANEL_WIDTH];
+  uint16_t clearLine[DEMO_PANEL_WIDTH];
   for (uint16_t i = 0U; i < DEMO_PANEL_WIDTH; i++) {
-    s_clearLine[i] = color;
+    clearLine[i] = color;
   }
   LCD_SetWindow(0U, 0U, DEMO_PANEL_WIDTH - 1U, DEMO_PANEL_HEIGHT - 1U);
   for (uint16_t row = 0U; row < DEMO_PANEL_HEIGHT; row++) {
-    LCD_PushPixelsOpen(s_clearLine, DEMO_PANEL_WIDTH);
+    LCD_PushPixelsOpen(clearLine, DEMO_PANEL_WIDTH);
   }
   LCD_EndWindow();
 }

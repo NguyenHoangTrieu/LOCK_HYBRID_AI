@@ -40,7 +40,11 @@ static bool s_everCaptured   = false;
 static uint32_t s_lastCaptureCycle = 0U;
 static uint32_t s_nextIndex  = 0U; /* 0 = not yet determined this session, see SNAPSHOT_OpenNextFile(). */
 
+#ifdef DUALCORE_RTOS
 static FATFS s_fs;
+#else
+static FATFS s_fs __attribute__((section(".sramx_bss"), aligned(4)));
+#endif
 
 static void SNAPSHOT_PutU16LE(uint8_t *p, uint16_t v)
 {
