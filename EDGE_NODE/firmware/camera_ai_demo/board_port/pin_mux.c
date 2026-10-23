@@ -21,6 +21,21 @@
 void BOARD_InitBootPins(void)
 {
     BOARD_InitDebugUartPins();
+    BOARD_InitButtonPins();
+}
+
+void BOARD_InitButtonPins(void)
+{
+    CLOCK_EnableClock(kCLOCK_Port0);
+    const port_pin_config_t sw3Config = {
+        .pullSelect          = kPORT_PullUp,
+        .mux                 = kPORT_MuxAlt0,
+        .inputBuffer         = kPORT_InputBufferEnable,
+        .lockRegister        = kPORT_UnlockRegister,
+    };
+    PORT_SetPinConfig(BOARD_SW3_PORT, BOARD_SW3_PIN, &sw3Config);
+    const gpio_pin_config_t inputConfig = {.pinDirection = kGPIO_DigitalInput, .outputLogic = 0U};
+    GPIO_PinInit(BOARD_SW3_GPIO, BOARD_SW3_PIN, &inputConfig);
 }
 
 void BOARD_InitDebugUartPins(void)

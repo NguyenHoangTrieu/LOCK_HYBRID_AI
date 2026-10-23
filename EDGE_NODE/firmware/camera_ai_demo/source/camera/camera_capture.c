@@ -115,6 +115,21 @@ static void CAMERA_CAPTURE_InitDevice(void) {
    * isn't enough for your lighting. */
   (void)OV7670_LightMode(&s_cameraHandle, &OV7670_LIGHT_MODE_HOME);
 
+  /* Boost exposure and gain for low-light indoor environments:
+   * 1. Raise AGC gain ceiling in COM9 from 4x (preset default) to 64x
+   *    so sensor can amplify in dark rooms.
+   * 2. Enable Auto Night Mode: doubles exposure time when dark.
+   * 3. Boost digital brightness offset (+32).
+   * 4. Raise AEC target luminance window (AEW=0x90, AEB=0x70) so AEC aims higher. */
+  (void)SCCB_ModifyReg(
+      OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_COM9_REG,
+      0x70U, 0x50U, /* bits [6:4] = 101b -> 64x gain ceiling */
+      s_cameraResource.i2cReceiveFunc, s_cameraResource.i2cSendFunc);
+  (void)OV7670_NightMode(&s_cameraHandle, &OV7670_NIGHT_MODE_AUTO_FR_DIVBY2);
+  (void)OV7670_BrightnessAdjustment(&s_cameraHandle, 0x20U);
+  (void)SCCB_WriteReg(OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_AEW_REG, 0x90U, s_cameraResource.i2cSendFunc);
+  (void)SCCB_WriteReg(OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_AEB_REG, 0x70U, s_cameraResource.i2cSendFunc);
+
   /* Set mirror/vflip explicitly, after OV7670_LightMode() so it's the
    * last word on MVFP - overrides the hidden mirror-on default above. */
   {

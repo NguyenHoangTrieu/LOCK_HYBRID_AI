@@ -12,7 +12,10 @@
 #   ./build.sh clean      remove build/
 #   ./build.sh erase      mass-erase the chip (recovery)
 #   ./build.sh reset      reset the board without reflashing
-#   ./build.sh monitor    open the serial console
+#   ./build.sh cam-build  build raw camera preview mode (no lock, lens focus)
+#   ./build.sh cam-flash  build & flash raw camera preview mode
+#   ./build.sh lock-build build full smart lock mode (AI + RFID + Servo + UI)
+#   ./build.sh lock-flash build & flash full smart lock mode
 #
 # Dual-core RTOS migration (DUALCORE_RTOS=ON, see WORKLOG.md) - separate
 # build dir (build_dualcore/) and commands, so the legacy single-core
@@ -162,9 +165,35 @@ do_dualcore_flash() {
 	say "Done. Board reset and running - core0 boots, then releases core1."
 }
 
+do_cam_build() {
+	say "Building RAW CAMERA PREVIEW mode (no lock, full 320x240 LCD stream)"
+	do_build -DEDGE_NODE_BUILD=OFF -DLCD_CAMERA_PREVIEW=ON
+}
+
+do_cam_flash() {
+	do_cam_build
+	do_flash
+}
+
+do_lock_build() {
+	say "Building FULL SMART LOCK mode (camera + AI NPU + RFID + UI + Servo)"
+	do_build -DEDGE_NODE_BUILD=ON -DLCD_CAMERA_PREVIEW=OFF -DNETWORK_TRANSPORT=ESP32
+}
+
+do_lock_flash() {
+	do_lock_build
+	do_flash
+}
+
 case "${1:-all}" in
 	build)          shift; do_build "$@";;
 	rebuild)        shift; rm -rf "$BUILD_DIR"; do_build "$@";;
+	cam-build)      do_cam_build;;
+	cam-flash)      do_cam_flash;;
+	cam)            do_cam_flash;;
+	lock-build)     do_lock_build;;
+	lock-flash)     do_lock_flash;;
+	lock)           do_lock_flash;;
 	flash)          do_flash;;
 	erase)          do_erase;;
 	reset)          do_reset;;

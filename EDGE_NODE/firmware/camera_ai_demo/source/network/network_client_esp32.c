@@ -102,7 +102,7 @@ static void EspCsHigh(void)
 {
     SDK_DelayAtLeastUs(20U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
     GPIO_PinWrite(DEMO_ESP32_CS_GPIO, DEMO_ESP32_CS_PIN, 1U);
-    SDK_DelayAtLeastUs(50U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
+    SDK_DelayAtLeastUs(200U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
 }
 
 /* One full-duplex PROTO_FRAME_SIZE-byte transaction. `tx`/`rx` must each
@@ -129,11 +129,10 @@ void NET_SetPollCallback(net_poll_callback_t cb)
     s_pollCb = cb;
 }
 
-/* Sends `req` once, then polls (CMD_POLL frames) until a response other
- * than RSP_BUSY/RSP_IDLE/a garbled frame arrives, or REQUEST_TIMEOUT_MS
- * elapses. Returns false on timeout - callers must treat that as "no
- * decision", never fabricate one (see network_client.h). */
-static bool SendAndWait(proto_frame_t *req, proto_frame_t *resp, uint32_t timeoutMs)
+/* Sends `req` once, then polls (CMD_POLL frames) until an expected response
+ * arrives or timeoutMs elapses. If acceptBusy is true, RSP_BUSY is accepted as
+ * an immediate success (used for chunk acknowledgments). */
+static bool SendAndWaitEx(proto_frame_t *req, proto_frame_t *resp, uint32_t timeoutMs, bool acceptBusy)
 {
     req->magic = PROTO_MAGIC;
     req->seq   = s_nextSeq++;
@@ -160,16 +159,45 @@ static bool SendAndWait(proto_frame_t *req, proto_frame_t *resp, uint32_t timeou
 
         Transceive(&poll, &rx);
 
-        if (rx.magic != PROTO_MAGIC || rx.type == PROTO_RSP_IDLE || rx.type == PROTO_RSP_BUSY)
+        if (rx.magic != PROTO_MAGIC || rx.type == PROTO_RSP_IDLE)
         {
             continue; /* not garbled-and-ignorable vs. "still working" - either way, keep polling */
         }
+
+        if (rx.type == PROTO_RSP_BUSY)
+        {
+            if (acceptBusy)
+            {
+                memcpy(resp, &rx, sizeof(rx));
+                return true;
+            }
+            continue; /* still working, keep waiting for the final response */
+        }
+
+        /* Strictly validate against recognized protocol response types.
+         * Garbled bytes (e.g. 0xA5 framing offset) must be ignored so polling continues. */
+        if (rx.type != PROTO_RSP_DECISION &&
+            rx.type != PROTO_RSP_CONFIG &&
+            rx.type != PROTO_RSP_HEARTBEAT_OK &&
+            rx.type != PROTO_RSP_CARDSTORE_DATA &&
+            rx.type != PROTO_RSP_ENROLL_RESULT &&
+            rx.type != PROTO_RSP_WIFI_DOWN &&
+            rx.type != PROTO_RSP_ERROR)
+        {
+            continue;
+        }
+
         memcpy(resp, &rx, sizeof(rx));
         return true;
     }
 
     PRINTF("NET: timed out waiting for a response (type=0x%02X, last rx magic=0x%04X type=0x%02X seq=%u)\r\n", req->type, rx.magic, rx.type, rx.seq);
     return false;
+}
+
+static bool SendAndWait(proto_frame_t *req, proto_frame_t *resp, uint32_t timeoutMs)
+{
+    return SendAndWaitEx(req, resp, timeoutMs, false);
 }
 
 void NET_Init(void)
@@ -439,12 +467,8 @@ bool NET_RequestDecision(net_method_t method, const uint8_t *payload, uint32_t p
     }
     else /* NET_METHOD_FACE */
     {
-        /* Chunked upload - see protocol.h. Not exercised end to end yet:
-         * state_machine.c currently calls NET_RequestDecision() with
-         * payload=NULL/payloadLen=0 for faces (no JPEG encoder wired up
-         * on the device side - see README.md's open items), so this
-         * path compiles and is reviewed but has nothing real to upload
-         * to test against today. */
+        PRINTF("NET: Starting face upload to ESP32 (%u bytes)...\r\n", (unsigned)payloadLen);
+
         proto_frame_t begin = {0};
         begin.type            = PROTO_CMD_FACE_BEGIN;
         uint32_t timeBE        = proto_be32(GetUnixTime());
@@ -452,12 +476,14 @@ bool NET_RequestDecision(net_method_t method, const uint8_t *payload, uint32_t p
         memcpy(begin.payload, &timeBE, 4U);
         memcpy(begin.payload + 4, &lenBE, 4U);
         begin.payload_len = 8U;
-        if (!SendAndWait(&begin, &resp, REQUEST_TIMEOUT_MS) || resp.type != PROTO_RSP_BUSY)
+        if (!SendAndWaitEx(&begin, &resp, REQUEST_TIMEOUT_MS, true) || resp.type != PROTO_RSP_BUSY)
         {
+            PRINTF("NET: Face begin failed (resp.type=0x%02X)\r\n", resp.type);
             return false;
         }
 
         uint32_t sent = 0U;
+        uint32_t chunkIdx = 0U;
         while (sent < payloadLen)
         {
             uint32_t chunkLen = payloadLen - sent;
@@ -471,19 +497,26 @@ bool NET_RequestDecision(net_method_t method, const uint8_t *payload, uint32_t p
             memcpy(chunk.payload, payload + sent, chunkLen);
             chunk.payload_len = (uint16_t)chunkLen;
             sent += chunkLen;
+            chunkIdx++;
 
             bool isLast = (sent >= payloadLen);
-            if (!SendAndWait(&chunk, &resp, REQUEST_TIMEOUT_MS))
+            /* For intermediate chunks, accept PROTO_RSP_BUSY as ACK.
+             * For the last chunk, wait up to 8s for PROTO_RSP_DECISION (acceptBusy=false). */
+            if (!SendAndWaitEx(&chunk, &resp, isLast ? 8000U : REQUEST_TIMEOUT_MS, !isLast))
             {
+                PRINTF("NET: Face chunk %u failed (isLast=%d)\r\n", (unsigned)chunkIdx, (int)isLast);
                 return false;
             }
             if (!isLast && resp.type != PROTO_RSP_BUSY)
             {
-                return false; /* ESP32 rejected mid-upload (e.g. size mismatch) - see spi_bridge.c's HandleFaceChunk() */
+                PRINTF("NET: ESP32 rejected chunk %u (resp.type=0x%02X)\r\n", (unsigned)chunkIdx, resp.type);
+                return false;
             }
+
+            /* Give ESP32 slave task enough slack to re-queue transaction */
+            SDK_DelayAtLeastUs(5000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
         }
-        /* After the last chunk, `resp` already holds whatever the final
-         * SendAndWait() call returned (RSP_DECISION on success). */
+        PRINTF("NET: All chunks sent, server response received (type=0x%02X)\r\n", resp.type);
     }
 
     if (resp.type != PROTO_RSP_DECISION)

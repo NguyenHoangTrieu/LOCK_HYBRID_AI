@@ -44,8 +44,13 @@
  * size (the LCD only ever shows text status lines now, not the live
  * camera image - see main.c).
  ******************************************************************************/
+#if defined(DEMO_LCD_CAMERA_PREVIEW) && DEMO_LCD_CAMERA_PREVIEW
+#define DEMO_PANEL_WIDTH  320U
+#define DEMO_PANEL_HEIGHT 240U
+#else
 #define DEMO_PANEL_WIDTH  240U
 #define DEMO_PANEL_HEIGHT 320U
+#endif
 
 /*******************************************************************************
  * J8 FlexIO/LCD header - 8-bit parallel MIPI-DBI/8080 bus (panel only has
@@ -95,6 +100,13 @@
 
 /* TFT backlight LED is hardwired to VDD_3V3 on the baseboard PCB */
 #define DEMO_LCD_HAS_BLK_PIN 0
+
+/*******************************************************************************
+ * User Button SW3 (P0_6) - Used for Mode Toggle (Lock <-> Camera Preview)
+ ******************************************************************************/
+#define BOARD_SW3_GPIO      GPIO0
+#define BOARD_SW3_PIN       6U
+#define BOARD_SW3_PORT      PORT0
 
 /*******************************************************************************
  * Touch controller (XPT2046) - source/display/touch_xpt2046.c

@@ -9,6 +9,7 @@ class DecisionResponse(BaseModel):
     name: str | None = None
     unlock_duration_sec: int = 0
     message: str
+    direction: str | None = None
 
 
 class CardAttendanceRequest(BaseModel):
@@ -157,6 +158,7 @@ class AttendanceOut(BaseModel):
     confidence: float | None
     occurred_at: str
     received_at: str
+    direction: str | None = None
 
 
 class ConfigUpdateRequest(BaseModel):

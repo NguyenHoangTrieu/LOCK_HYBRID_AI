@@ -131,9 +131,14 @@ static void LCD_InitPanel(void) {
   LCD_WriteCommand(0x11U); /* Sleep out */
   SDK_DelayAtLeastUs(150000, SystemCoreClock);
 
+#if defined(DEMO_LCD_CAMERA_PREVIEW) && DEMO_LCD_CAMERA_PREVIEW
+  /* MADCTL: MV=1 (landscape 320x240) matches camera buffer 1:1 for lens focus preview */
+  LCD_WriteCommandData(0x36U, (const uint8_t[]){0x20U}, 1U);
+#else
   /* MADCTL: MV=0 (portrait 240x320 native GRAM), MX=1 (un-mirrored column order), MY=1 (rotated 180 deg).
    * BGR=0 (RGB color order). Matches physical upright orientation on FRDM-MCXN947. */
   LCD_WriteCommandData(0x36U, (const uint8_t[]){0xC0U}, 1U);
+#endif
 
   LCD_WriteCommandData(0x3AU, (const uint8_t[]){0x55U},
                        1U); /* Pixel format: 16bpp RGB565 */
@@ -228,6 +233,26 @@ void LCD_EndWindow(void) { LCD_SetCSPin(true); }
 
 void LCD_PushPixels(const uint16_t *pixels, uint32_t count) {
   LCD_PushPixelsOpen(pixels, count);
+  LCD_EndWindow();
+}
+
+void LCD_SetOrientation(bool landscape) {
+  /* 0x20: MV=1, 320x240 landscape (matches camera frame)
+   * 0xC0: MV=0, MX=1, MY=1, 240x320 portrait (matches lock UI) */
+  uint8_t madctl = landscape ? 0x20U : 0xC0U;
+  LCD_WriteCommandData(0x36U, &madctl, 1U);
+}
+
+void LCD_Clear(uint16_t color, uint16_t width, uint16_t height) {
+  uint16_t lineBuf[320];
+  uint16_t maxW = (width > 320U) ? 320U : width;
+  for (uint16_t i = 0U; i < maxW; i++) {
+    lineBuf[i] = color;
+  }
+  LCD_SetWindow(0U, 0U, width - 1U, height - 1U);
+  for (uint16_t row = 0U; row < height; row++) {
+    LCD_PushPixelsOpen(lineBuf, width);
+  }
   LCD_EndWindow();
 }
 

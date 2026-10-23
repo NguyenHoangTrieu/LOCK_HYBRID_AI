@@ -214,6 +214,14 @@ SECTIONS
     __sramx_bss_end__ = .;
   } > m_sramx
 
+  .noinit (NOLOAD) :
+  {
+    . = ALIGN(4);
+    *(.noinit)
+    *(.noinit*)
+    . = ALIGN(4);
+  } > m_sramx
+
   .model :
   {
     *(.model)

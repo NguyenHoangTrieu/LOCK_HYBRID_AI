@@ -50,7 +50,11 @@ static uint16_t TOUCH_ReadChannel(uint8_t command) {
   return (uint16_t)(((uint16_t)rx[1] << 8U | rx[2]) >> 3U);
 }
 
-void TOUCH_Init(void) { SPI1_BUS_Init(); }
+void TOUCH_Init(void) {
+  SPI1_BUS_Init();
+  /* Ensure XPT2046 is in low-power mode with PENIRQ enabled (PD1=0, PD0=0) */
+  (void)TOUCH_ReadChannel(TOUCH_CMD_READ_X);
+}
 
 bool TOUCH_IsPressed(void) {
   return GPIO_PinRead(DEMO_TOUCH_IRQ_GPIO, DEMO_TOUCH_IRQ_PIN) == 0U;

@@ -7,11 +7,11 @@ import io
 import sqlite3
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 
 from .. import cards as cards_mod
-from .. import enrollment, recognition, security
+from .. import enrollment, inout, recognition, security
 from ..db import get_db
 from ..deps import require_admin
 from ..schemas import (
@@ -30,7 +30,21 @@ from ..schemas import (
     UserOut,
 )
 
+public_router = APIRouter(prefix="/admin/api", tags=["admin-public"])
 router = APIRouter(prefix="/admin/api", tags=["admin"], dependencies=[Depends(require_admin)])
+
+
+@public_router.get("/users/{user_id}/avatar")
+def get_user_avatar(user_id: int, db: sqlite3.Connection = Depends(get_db)):
+    """Public endpoint to serve user avatar image or dynamic SVG fallback for HTML <img> tags."""
+    path = inout.get_avatar_file(user_id)
+    if path is not None:
+        return FileResponse(path, media_type="image/jpeg")
+
+    row = db.execute("SELECT name FROM users WHERE id = ?", (user_id,)).fetchone()
+    name = row["name"] if row else ""
+    svg_bytes = inout.generate_default_avatar_svg(name, user_id)
+    return Response(content=svg_bytes, media_type="image/svg+xml")
 
 
 def _device_out(db: sqlite3.Connection, row: sqlite3.Row) -> DeviceOut:
@@ -54,23 +68,34 @@ def _device_out(db: sqlite3.Connection, row: sqlite3.Row) -> DeviceOut:
 
 
 @router.post("/users", response_model=UserCreateResponse)
-def create_user(name: str, org_id: str | None, db: sqlite3.Connection = Depends(get_db)):
-    """FR-26: register a user without face photos yet - UR-3's 3-minute
-    enroll budget is spent in the UI flow (name+org, then photos via
-    POST /users/{id}/photos), not necessarily one HTTP call."""
+def create_user(
+    name: str,
+    org_id: str | None = None,
+    card_uid: str | None = None,
+    db: sqlite3.Connection = Depends(get_db),
+    admin: sqlite3.Row = Depends(require_admin),
+):
+    """FR-26: register a user with name, optional org_id, and optional card_uid."""
+    name_clean = name.strip()
+    if not name_clean:
+        raise HTTPException(400, "name cannot be empty")
     cur = db.execute(
         "INSERT INTO users (name, org_id, active, created_at) VALUES (?, ?, 1, ?)",
-        (name, org_id, datetime.now(timezone.utc).isoformat()),
+        (name_clean, org_id.strip() if org_id else None, datetime.now(timezone.utc).isoformat()),
     )
-    return UserCreateResponse(id=cur.lastrowid, name=name)
+    user_id = cur.lastrowid
+    if card_uid and card_uid.strip():
+        try:
+            cards_mod.assign_card(db, card_uid.strip(), user_id, by=admin["username"], confirm_reassign=True)
+        except Exception:
+            pass
+    return UserCreateResponse(id=user_id, name=name_clean)
 
 
 @router.post("/users/{user_id}/photos")
 def enroll_photos(user_id: int, photos: list[UploadFile], db: sqlite3.Connection = Depends(get_db)):
     """FR-27/FR-28/DR-2: accepts several photos, averages their
-    embeddings, stores only the averaged embedding, discards the photo
-    bytes once this function returns (they are never written anywhere -
-    DR-2's 'original enrollment images shall not be retained')."""
+    embeddings, stores only the averaged embedding, and saves the first photo as registered avatar."""
     user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if user is None:
         raise HTTPException(404, "user not found")
@@ -78,14 +103,17 @@ def enroll_photos(user_id: int, photos: list[UploadFile], db: sqlite3.Connection
         raise HTTPException(400, "at least one photo is required")
 
     embeddings = []
+    saved_avatar = False
     for photo in photos:
         data = photo.file.read()
         try:
             vec = recognition.get_embedder().embed(data)
         except recognition.NoFaceFoundError:
-            # FR-28: reject with a reason, don't silently skip a bad photo.
             raise HTTPException(400, f"no face found in '{photo.filename}'")
         embeddings.append(vec)
+        if not saved_avatar:
+            inout.save_avatar_image(user_id, data)
+            saved_avatar = True
 
     averaged = recognition.average_embeddings(embeddings)
     db.execute(
@@ -93,6 +121,30 @@ def enroll_photos(user_id: int, photos: list[UploadFile], db: sqlite3.Connection
         (recognition.embedding_to_blob(averaged), recognition.EMBEDDING_VERSION, user_id),
     )
     return {"ok": True, "photos_used": len(embeddings)}
+
+
+@router.post("/users/{user_id}/avatar")
+def upload_user_avatar(user_id: int, avatar: UploadFile = File(...), db: sqlite3.Connection = Depends(get_db)):
+    """Upload or update profile picture avatar for a user and sync face embedding if face detected."""
+    user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if user is None:
+        raise HTTPException(404, "user not found")
+    data = avatar.file.read()
+    if not inout.save_avatar_image(user_id, data):
+        raise HTTPException(400, "invalid or unreadable image file")
+
+    face_enrolled = False
+    try:
+        vec = recognition.get_embedder().embed(data)
+        db.execute(
+            "UPDATE users SET embedding = ?, embedding_version = ? WHERE id = ?",
+            (recognition.embedding_to_blob(vec), recognition.EMBEDDING_VERSION, user_id),
+        )
+        face_enrolled = True
+    except Exception:
+        pass
+
+    return {"ok": True, "face_enrolled": face_enrolled}
 
 
 @router.get("/users", response_model=list[UserOut])
@@ -114,45 +166,50 @@ def list_users(db: sqlite3.Connection = Depends(get_db)):
 @router.patch("/users/{user_id}")
 def update_user(
     user_id: int,
+    name: str | None = None,
+    org_id: str | None = None,
     active: bool | None = None,
     card_uid: str | None = None,
     admin: sqlite3.Row = Depends(require_admin),
     db: sqlite3.Connection = Depends(get_db),
 ):
-    """FR-29 (assign/revoke a card through the `cards` helpers, so
-    DR-8/FR-59 history stays accurate even via this quick-assign route -
-    pass card_uid="" to release) and FR-30 (deactivate: active=False
-    denies both methods immediately; also bumps card_store_version
-    (FR-52) since a deactivated user's card must stop working on nodes
-    within PR-9, same as an explicit release)."""
+    """Update user information: name, org_id, active status, or assigned card_uid."""
     user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if user is None:
         raise HTTPException(404, "user not found")
 
+    if name is not None:
+        name_clean = name.strip()
+        if not name_clean:
+            raise HTTPException(400, "name cannot be empty")
+        db.execute("UPDATE users SET name = ? WHERE id = ?", (name_clean, user_id))
+
+    if org_id is not None:
+        db.execute("UPDATE users SET org_id = ? WHERE id = ?", (org_id.strip() or None, user_id))
+
     if active is not None:
         db.execute("UPDATE users SET active = ? WHERE id = ?", (int(active), user_id))
         cards_mod.bump_card_store_version(db)
+
     if card_uid is not None:
-        try:
-            if card_uid == "":
-                cards_mod.release_card_for_user(db, user_id, by=admin["username"])
-            else:
-                cards_mod.assign_card(db, card_uid, user_id, by=admin["username"])
-        except cards_mod.CardError as exc:
-            raise HTTPException(409, str(exc))  # DR-6 / UI-25 confirmation cases
+        card_clean = card_uid.strip()
+        current_uid = user["card_uid"] or ""
+        if card_clean != current_uid:
+            try:
+                if card_clean == "":
+                    cards_mod.release_card_for_user(db, user_id, by=admin["username"])
+                else:
+                    cards_mod.assign_card(db, card_clean, user_id, by=admin["username"], confirm_reassign=True)
+            except cards_mod.CardError as exc:
+                raise HTTPException(409, str(exc))
     return {"ok": True}
 
 
 @router.delete("/users/{user_id}")
 def delete_user(user_id: int, admin: sqlite3.Row = Depends(require_admin), db: sqlite3.Connection = Depends(get_db)):
-    """FR-31/SR-5: permanent delete of the user and their data. Attendance
-    records keep the row but it now points at a vanished user_id (DR-4
-    still wants 'which person where identified' as a historical fact);
-    SQLite's default FK behavior leaves user_id as-is rather than cascading,
-    which is what we want here - the attendance history isn't the personal
-    data SR-5 is about, the user row (name/org/embedding/card) is.
-    FR-31: any card they held is released (FR-56)."""
+    """FR-31/SR-5: permanent delete of the user and their data."""
     cards_mod.release_card_for_user(db, user_id, by=admin["username"])
+    inout.delete_avatar_file(user_id)
     db.execute("UPDATE attendance_events SET user_id = NULL WHERE user_id = ?", (user_id,))
     db.execute("DELETE FROM users WHERE id = ?", (user_id,))
     return {"ok": True}
@@ -197,6 +254,22 @@ def update_device(device_id: str, body: DeviceUpdateRequest, db: sqlite3.Connect
     if body.enabled is not None:
         db.execute("UPDATE devices SET enabled = ? WHERE id = ?", (int(body.enabled), device_id))
     return _device_out(db, db.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone())
+
+
+@router.delete("/devices/{device_id}")
+def delete_device(
+    device_id: str,
+    admin: sqlite3.Row = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    """Deletes a device and its attendance records and active enrollment sessions."""
+    device = db.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone()
+    if device is None:
+        raise HTTPException(404, "device not found")
+    enrollment.cancel_session(db, device_id)
+    db.execute("DELETE FROM attendance_events WHERE device_id = ?", (device_id,))
+    db.execute("DELETE FROM devices WHERE id = ?", (device_id,))
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------- #
@@ -322,9 +395,36 @@ def list_attendance(
             confidence=r["confidence"],
             occurred_at=r["occurred_at"],
             received_at=r["received_at"],
+            direction=r["direction"],
         )
         for r in rows
     ]
+
+
+@router.get("/inout")
+def get_inout_status(date: str | None = None, db: sqlite3.Connection = Depends(get_db)):
+    """Daily Check-In / Check-Out monitor: personnel, photo, status (IN/OUT), first in, last out, duration."""
+    target_date = date or datetime.now().strftime("%Y-%m-%d")
+    return inout.get_inout_status_for_date(db, target_date)
+
+
+@router.get("/inout/export.xlsx")
+def export_inout_excel(
+    from_date: str | None = None,
+    to_date: str | None = None,
+    db: sqlite3.Connection = Depends(get_db),
+):
+    """Multi-day attendance report export as Excel (.xlsx)."""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    f_date = from_date or today_str
+    t_date = to_date or today_str
+    content = inout.generate_inout_excel(db, f_date, t_date)
+    filename = f"inout_report_{f_date}_to_{t_date}.xlsx"
+    return Response(
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.get("/attendance/export.csv")

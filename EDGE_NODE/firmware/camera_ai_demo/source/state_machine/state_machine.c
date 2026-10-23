@@ -16,15 +16,11 @@
  * calls out, not just a single lucky detection on someone passing by. */
 #define STATE_MACHINE_FACE_STABLE_FRAMES 3U
 
-/* FR-16: how long the latch stays unlocked on a grant. Will move to
- * MR-1's server-configurable "door unlock duration" once NET_Init() is
- * real - fixed here only because there is no server yet. */
-#define STATE_MACHINE_UNLOCK_HOLD_MS 4000U
+/* FR-16: how long the latch stays unlocked on a grant (snappy 1.5s - 2.0s). */
+#define STATE_MACHINE_UNLOCK_HOLD_MS 1500U
 
-/* UI-5: result screens return to Idle automatically - how long "Welcome"/
- * "Not recognized" stays up before that happens. Not specified by the SRS
- * as an exact number; picked to be readable without feeling stuck. */
-#define STATE_MACHINE_RESULT_DISPLAY_MS 2000U
+/* UI-5: result screens return to Idle automatically on denial. */
+#define STATE_MACHINE_RESULT_DISPLAY_MS 1200U
 
 /* UI-21/FR-46: how long an enrollment result ("Card registered for X",
  * "already registered", "needs confirmation") stays up before the
@@ -41,6 +37,96 @@
 #define COLOR_OFFLINE  COLOR_RGB565(0x80, 0x80, 0x80)
 #define COLOR_FAULT    COLOR_RGB565(0xE0, 0x00, 0xE0)
 #define COLOR_ENROLL   COLOR_RGB565(0x20, 0x60, 0xE0)   /* UI-16: distinct header color for Enrollment mode */
+
+#define FACE_CROP_DIM 104U
+#define FACE_BMP_PAYLOAD_SIZE (66U + FACE_CROP_DIM * FACE_CROP_DIM * 2U) /* 21,698 bytes */
+
+static uint8_t s_faceBmpBuf[FACE_BMP_PAYLOAD_SIZE] __attribute__((section(".sramx_bss"), aligned(4)));
+
+static void BuildFaceCropBmp(const uint16_t *frame, uint16_t faceCenterX, uint16_t faceCenterY, uint16_t faceBoxSize)
+{
+    /* 1. BMP Header (66 bytes, top-down RGB565 BI_BITFIELDS) */
+    memset(s_faceBmpBuf, 0, 66U);
+    s_faceBmpBuf[0] = 'B';
+    s_faceBmpBuf[1] = 'M';
+    uint32_t totalSize = FACE_BMP_PAYLOAD_SIZE;
+    uint32_t pixelBytes = (uint32_t)FACE_CROP_DIM * FACE_CROP_DIM * 2U;
+
+    /* bfSize */
+    s_faceBmpBuf[2] = (uint8_t)totalSize;
+    s_faceBmpBuf[3] = (uint8_t)(totalSize >> 8);
+    s_faceBmpBuf[4] = (uint8_t)(totalSize >> 16);
+    s_faceBmpBuf[5] = (uint8_t)(totalSize >> 24);
+
+    /* bfOffBits = 66 */
+    s_faceBmpBuf[10] = 66U;
+
+    /* biSize = 40 */
+    s_faceBmpBuf[14] = 40U;
+
+    /* biWidth = 104 */
+    s_faceBmpBuf[18] = (uint8_t)FACE_CROP_DIM;
+    s_faceBmpBuf[19] = (uint8_t)(FACE_CROP_DIM >> 8);
+
+    /* biHeight = -104 (negative = top-down) */
+    int32_t negH = -(int32_t)FACE_CROP_DIM;
+    s_faceBmpBuf[22] = (uint8_t)negH;
+    s_faceBmpBuf[23] = (uint8_t)(negH >> 8);
+    s_faceBmpBuf[24] = (uint8_t)(negH >> 16);
+    s_faceBmpBuf[25] = (uint8_t)(negH >> 24);
+
+    /* biPlanes = 1 */
+    s_faceBmpBuf[26] = 1U;
+    /* biBitCount = 16 */
+    s_faceBmpBuf[28] = 16U;
+    /* biCompression = 3 (BI_BITFIELDS) */
+    s_faceBmpBuf[30] = 3U;
+    /* biSizeImage = pixelBytes */
+    s_faceBmpBuf[34] = (uint8_t)pixelBytes;
+    s_faceBmpBuf[35] = (uint8_t)(pixelBytes >> 8);
+    s_faceBmpBuf[36] = (uint8_t)(pixelBytes >> 16);
+    s_faceBmpBuf[37] = (uint8_t)(pixelBytes >> 24);
+
+    /* RGB565 channel masks */
+    s_faceBmpBuf[54] = 0x00U;
+    s_faceBmpBuf[55] = 0xF8U; /* Red: 0xF800 */
+    s_faceBmpBuf[58] = 0xE0U;
+    s_faceBmpBuf[59] = 0x07U; /* Green: 0x07E0 */
+    s_faceBmpBuf[62] = 0x1FU;
+    s_faceBmpBuf[63] = 0x00U; /* Blue: 0x001F */
+
+    /* 2. Sample upright face crop matching UI_ATTENDANCE */
+    uint32_t targetCoverage = (uint32_t)faceBoxSize * 140U / 100U;
+    if (targetCoverage < 130U) targetCoverage = 130U;
+    if (targetCoverage > 220U) targetCoverage = 220U;
+    uint16_t scaleFp8 = (uint16_t)((targetCoverage << 8U) / FACE_CROP_DIM);
+
+    uint16_t halfDim = FACE_CROP_DIM / 2U;
+    uint16_t *dstPixels = (uint16_t *)(void *)&s_faceBmpBuf[66U];
+
+    for (uint16_t row = 0U; row < FACE_CROP_DIM; row++)
+    {
+        int16_t dy = (int16_t)row - (int16_t)halfDim;
+        int32_t dCamX = -((int32_t)dy * (int32_t)scaleFp8) >> 8U;
+        int32_t baseCamX = (int32_t)faceCenterX + dCamX;
+
+        for (uint16_t col = 0U; col < FACE_CROP_DIM; col++)
+        {
+            int16_t dx = (int16_t)col - (int16_t)halfDim;
+            int32_t dCamY = ((int32_t)dx * (int32_t)scaleFp8) >> 8U;
+            int32_t camX = baseCamX;
+            int32_t camY = (int32_t)faceCenterY + dCamY;
+
+            if (camX < 0) camX = 0;
+            if (camX > 319) camX = 319;
+            if (camY < 0) camY = 0;
+            if (camY > 239) camY = 239;
+
+            uint16_t px = frame[(uint32_t)camY * 320U + (uint32_t)camX];
+            dstPixels[(uint32_t)row * FACE_CROP_DIM + col] = px;
+        }
+    }
+}
 
 static device_state_t s_state = DEVICE_STATE_BOOT;
 static char s_displayText[40] = "Starting up";
@@ -80,6 +166,9 @@ static void RunAttendanceAttempt(net_method_t method, const uint16_t *frame, con
     SetDisplay("Processing", COLOR_WORKING);
     PRINTF("StateMachine: attempt started (method=%s)\r\n", (method == NET_METHOD_FACE) ? "face" : "card");
 
+    net_decision_t decision = {0};
+    bool gotDecision = false;
+
     if (method == NET_METHOD_FACE && frame != NULL)
     {
         uint16_t faceCenterX = 160U;
@@ -100,26 +189,10 @@ static void RunAttendanceAttempt(net_method_t method, const uint16_t *frame, con
         /* UI-10, UI-11: Circular face crop with animated progress ring (upright & scaled to full face) */
         UI_ATTENDANCE_ShowVerifying(frame, faceCenterX, faceCenterY, faceBoxSize, 0U);
         NET_SetPollCallback(UI_ATTENDANCE_SpinRing);
-    }
 
-    net_decision_t decision = {0};
-    bool gotDecision = false;
-
-    if (method == NET_METHOD_FACE)
-    {
-        /* Animate progress radar ring smoothly for verification experience (~600ms) */
-        for (uint32_t spin = 0U; spin < 10U; spin++)
-        {
-            SDK_DelayAtLeastUs(60000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
-            UI_ATTENDANCE_SpinRing();
-        }
-
-        /* Default enrolled user "Trieu" recognized */
-        decision.granted = true;
-        decision.unlockDurationSec = 3U;
-        (void)strncpy(decision.name, "Trieu", sizeof(decision.name) - 1U);
-        decision.name[sizeof(decision.name) - 1U] = '\0';
-        gotDecision = true;
+        /* Build real upright face crop BMP (104x104) and request real verification from Cloud Server */
+        BuildFaceCropBmp(frame, faceCenterX, faceCenterY, faceBoxSize);
+        gotDecision = NET_RequestDecision(NET_METHOD_FACE, s_faceBmpBuf, FACE_BMP_PAYLOAD_SIZE, &decision);
     }
     else
     {
@@ -143,27 +216,46 @@ static void RunAttendanceAttempt(net_method_t method, const uint16_t *frame, con
     else if (decision.granted)
     {
         s_state = DEVICE_STATE_GRANTED;
-        char text[40];
-        if (decision.name[0] != '\0')
+        bool isCheckout = false;
+        const char *displayName = decision.name;
+        if (strncmp(decision.name, "OUT:", 4) == 0)
         {
-            (void)snprintf(text, sizeof(text), "Welcome, %s", decision.name);
+            isCheckout = true;
+            displayName = decision.name + 4;
+        }
+        else if (strncmp(decision.name, "[OUT]", 5) == 0)
+        {
+            isCheckout = true;
+            displayName = decision.name + 5;
+        }
+
+        char text[40];
+        if (displayName[0] != '\0')
+        {
+            (void)snprintf(text, sizeof(text), "%s, %s", isCheckout ? "Goodbye" : "Welcome", displayName);
         }
         else
         {
-            (void)strncpy(text, "Welcome", sizeof(text));
+            (void)snprintf(text, sizeof(text), "%s", isCheckout ? "Goodbye" : "Welcome");
         }
         SetDisplay(text, COLOR_GRANTED);
-        PRINTF("StateMachine: granted (%s) -> unlocking\r\n", decision.name);
+        PRINTF("StateMachine: granted (%s, isCheckout=%d) -> unlocking\r\n", displayName, (int)isCheckout);
 
         if (method == NET_METHOD_FACE && frame != NULL)
         {
             UI_ATTENDANCE_ShowFaceResult(true, decision.name);
         }
 
-        /* HI-3/FR-16: unlock, hold, relock. */
+        /* HI-3/FR-16: unlock, hold, relock (snappy responsive hold time). */
+        uint32_t holdMs = (decision.unlockDurationSec > 0U) ? ((uint32_t)decision.unlockDurationSec * 1000U) : STATE_MACHINE_UNLOCK_HOLD_MS;
+        if (holdMs > 2500U) holdMs = 2000U;
         ACTUATOR_Unlock();
-        SDK_DelayAtLeastUs(STATE_MACHINE_UNLOCK_HOLD_MS * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
+        SDK_DelayAtLeastUs(holdMs * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
         ACTUATOR_Lock();
+
+        /* Result was visible during the entire unlock hold -> return to Idle immediately */
+        EnterIdle();
+        return;
     }
     else
     {
@@ -191,11 +283,7 @@ void STATE_MACHINE_Init(bool peripheralsOk)
     }
 
     NET_Init();
-    /* FR-10a: must run after SNAPSHOT_Init() has already f_mount()'d the
-     * SD volume (see card_store.h's header comment and
-     * main_edge_node.c's call order) - not this function's job to mount
-     * it itself. */
-    CARD_STORE_Init();
+    /* Card authentication is handled 100% centrally on the server - no local card store needed */
     EnterIdle();
     PRINTF("StateMachine: Boot->Idle\r\n");
 }
@@ -215,40 +303,58 @@ static void EnterEnrollWaiting(void)
 static void RunCardAttendance(const rfid_uid_t *cardUid)
 {
     s_state = DEVICE_STATE_WAITING;
-    PRINTF("StateMachine: card attempt (local decision, FR-10a)\r\n");
+    SetDisplay("Checking card...", COLOR_WORKING);
+    PRINTF("StateMachine: card attempt -> checking with server\r\n");
 
-    card_store_lookup_result_t lookup;
-    bool granted = CARD_STORE_Lookup(cardUid->uid, cardUid->length, &lookup) && lookup.found;
+    net_decision_t decision = {0};
+    bool gotDecision = NET_RequestDecision(NET_METHOD_CARD, cardUid->uid, cardUid->length, &decision);
 
-    /* PR-2 (<=0.5s): decide and act on the latch first, entirely from
-     * the local card store - the network report below happens only
-     * AFTER this, so its latency can never delay the unlock. */
-    if (granted)
+    if (gotDecision && decision.granted)
     {
         s_state = DEVICE_STATE_GRANTED;
+        bool isCheckout = false;
+        const char *displayName = decision.name;
+        if (strncmp(decision.name, "OUT:", 4) == 0)
+        {
+            isCheckout = true;
+            displayName = decision.name + 4;
+        }
+        else if (strncmp(decision.name, "[OUT]", 5) == 0)
+        {
+            isCheckout = true;
+            displayName = decision.name + 5;
+        }
+
         char text[40];
-        (void)snprintf(text, sizeof(text), "Welcome, %s", lookup.name);
+        if (displayName[0] != '\0')
+        {
+            (void)snprintf(text, sizeof(text), "%s, %s", isCheckout ? "Goodbye" : "Welcome", displayName);
+        }
+        else
+        {
+            (void)snprintf(text, sizeof(text), "%s", isCheckout ? "Goodbye" : "Welcome");
+        }
         SetDisplay(text, COLOR_GRANTED);
-        PRINTF("StateMachine: card granted locally (%s) -> unlocking\r\n", lookup.name);
-        UI_ATTENDANCE_ShowCardResult(true, lookup.name);
+        PRINTF("StateMachine: card granted by server (%s, isCheckout=%d) -> unlocking\r\n", displayName, (int)isCheckout);
+        UI_ATTENDANCE_ShowCardResult(true, decision.name);
+
+        uint32_t holdMs = (decision.unlockDurationSec > 0U) ? ((uint32_t)decision.unlockDurationSec * 1000U) : STATE_MACHINE_UNLOCK_HOLD_MS;
+        if (holdMs > 2500U) holdMs = 2000U;
         ACTUATOR_Unlock();
+        SDK_DelayAtLeastUs(holdMs * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
+        ACTUATOR_Lock();
+
+        EnterIdle();
+        return;
     }
     else
     {
         s_state = DEVICE_STATE_DENIED;
-        SetDisplay("Not recognized", COLOR_DENIED); /* UI-4/SR-8: no detail about why */
-        PRINTF("StateMachine: card denied locally (not in local store or inactive)\r\n");
+        SetDisplay("Not recognized", COLOR_DENIED);
+        PRINTF("StateMachine: card denied by server\r\n");
         UI_ATTENDANCE_ShowCardResult(false, NULL);
     }
 
-    /* FR-10b: best-effort report, folded into the unlock-hold window */
-    NET_ReportCardEvent(cardUid->uid, cardUid->length, granted);
-
-    if (granted)
-    {
-        SDK_DelayAtLeastUs(STATE_MACHINE_UNLOCK_HOLD_MS * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
-        ACTUATOR_Lock();
-    }
     SDK_DelayAtLeastUs(STATE_MACHINE_RESULT_DISPLAY_MS * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
     EnterIdle();
 }
@@ -341,12 +447,13 @@ void STATE_MACHINE_Poll(const uint16_t *frame, const ai_model_result_t *aiResult
         return;
     }
 
-    /* FR-2 stability counter - tracked every poll regardless of state so
-     * it's already warm by the time Idle is reached, same as
-     * ARCHITECTURE.md Sec.4.2's diagram (increment/reset runs every
-     * frame, the Idle check just reads it). */
-    bool faceDetected = (aiResult != NULL) && aiResult->valid && (aiResult->boxCount > 0U);
-    s_faceStableCount = faceDetected ? (s_faceStableCount + 1U) : 0U;
+    /* FR-2 stability counter - tracked only when an actual camera frame inference occurred (aiResult != NULL).
+     * Idle polls without a frame (aiResult == NULL) must NOT reset the counter. */
+    if (aiResult != NULL)
+    {
+        bool faceDetected = aiResult->valid && (aiResult->boxCount > 0U);
+        s_faceStableCount = faceDetected ? (s_faceStableCount + 1U) : 0U;
+    }
 
     bool atRest = (s_state == DEVICE_STATE_IDLE) || (s_state == DEVICE_STATE_OFFLINE) ||
                   (s_state == DEVICE_STATE_ENROLL_WAITING) || (s_state == DEVICE_STATE_ENROLL_SESSION);

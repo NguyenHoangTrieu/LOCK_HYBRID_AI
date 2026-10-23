@@ -567,17 +567,33 @@ void UI_ATTENDANCE_ShowFaceResult(bool granted, const char *name)
 
     if (granted)
     {
-        DrawCenteredTextSolid(205U, "ACCESS GRANTED", UI_COLOR_GREEN, UI_COLOR_BG);
-        char welcome[40];
-        if (name != NULL && name[0] != '\0')
+        bool isCheckout = false;
+        const char *displayName = name;
+        if (name != NULL)
         {
-            (void)snprintf(welcome, sizeof(welcome), "Welcome, %s", name);
+            if (strncmp(name, "OUT:", 4) == 0)
+            {
+                isCheckout = true;
+                displayName = name + 4;
+            }
+            else if (strncmp(name, "[OUT]", 5) == 0)
+            {
+                isCheckout = true;
+                displayName = name + 5;
+            }
+        }
+
+        DrawCenteredTextSolid(205U, isCheckout ? "CHECKED OUT" : "ACCESS GRANTED", UI_COLOR_GREEN, UI_COLOR_BG);
+        char greeting[40];
+        if (displayName != NULL && displayName[0] != '\0')
+        {
+            (void)snprintf(greeting, sizeof(greeting), "%s, %s", isCheckout ? "Goodbye" : "Welcome", displayName);
         }
         else
         {
-            (void)snprintf(welcome, sizeof(welcome), "Welcome");
+            (void)snprintf(greeting, sizeof(greeting), "%s", isCheckout ? "Goodbye" : "Welcome");
         }
-        DrawCenteredTextSolid(235U, welcome, UI_COLOR_WHITE, UI_COLOR_BG);
+        DrawCenteredTextSolid(235U, greeting, UI_COLOR_WHITE, UI_COLOR_BG);
     }
     else
     {
@@ -594,18 +610,34 @@ void UI_ATTENDANCE_ShowCardResult(bool granted, const char *name)
 
     if (granted)
     {
-        DrawCenteredTextSolid(40U, "[ CARD ACCESS ]", UI_COLOR_GREEN, UI_COLOR_BG);
-        DrawCenteredTextSolid(100U, "ACCESS GRANTED", UI_COLOR_GREEN, UI_COLOR_BG);
-        char welcome[40];
-        if (name != NULL && name[0] != '\0')
+        bool isCheckout = false;
+        const char *displayName = name;
+        if (name != NULL)
         {
-            (void)snprintf(welcome, sizeof(welcome), "Welcome, %s", name);
+            if (strncmp(name, "OUT:", 4) == 0)
+            {
+                isCheckout = true;
+                displayName = name + 4;
+            }
+            else if (strncmp(name, "[OUT]", 5) == 0)
+            {
+                isCheckout = true;
+                displayName = name + 5;
+            }
+        }
+
+        DrawCenteredTextSolid(40U, "[ CARD ACCESS ]", UI_COLOR_GREEN, UI_COLOR_BG);
+        DrawCenteredTextSolid(100U, isCheckout ? "CHECKED OUT" : "ACCESS GRANTED", UI_COLOR_GREEN, UI_COLOR_BG);
+        char greeting[40];
+        if (displayName != NULL && displayName[0] != '\0')
+        {
+            (void)snprintf(greeting, sizeof(greeting), "%s, %s", isCheckout ? "Goodbye" : "Welcome", displayName);
         }
         else
         {
-            (void)snprintf(welcome, sizeof(welcome), "Welcome");
+            (void)snprintf(greeting, sizeof(greeting), "%s", isCheckout ? "Goodbye" : "Welcome");
         }
-        DrawCenteredTextSolid(145U, welcome, UI_COLOR_WHITE, UI_COLOR_BG);
+        DrawCenteredTextSolid(145U, greeting, UI_COLOR_WHITE, UI_COLOR_BG);
         DrawCenteredTextSolid(195U, "Door Unlocked", UI_COLOR_CYAN, UI_COLOR_BG);
     }
     else

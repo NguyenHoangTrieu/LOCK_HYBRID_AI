@@ -57,6 +57,7 @@ app = FastAPI(
 )
 
 app.include_router(device.router)
+app.include_router(admin.public_router)
 app.include_router(admin.router)
 
 if STATIC_DIR.exists():

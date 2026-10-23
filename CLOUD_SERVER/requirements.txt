@@ -4,6 +4,7 @@ pydantic==2.14.1
 numpy==2.5.4
 python-multipart==0.0.32
 Pillow==13.0.0
+openpyxl>=3.1.0
 
 # Real face recognition (app/recognition.py's InsightFaceEmbedder) - see
 # CLOUD_SERVER/README.md's "Recognition model" section. Server still runs

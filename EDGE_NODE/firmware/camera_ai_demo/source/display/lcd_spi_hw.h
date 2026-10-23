@@ -14,11 +14,20 @@
 #ifndef _LCD_SPI_HW_H_
 #define _LCD_SPI_HW_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /*! @brief Init the shared SPI bus (if not already done) and reset/
  *  configure the panel. */
 void LCD_Init(void);
+
+/*! @brief Set dynamic panel orientation:
+ *  - landscape = true: 320x240 (MADCTL 0x20) for camera preview
+ *  - landscape = false: 240x320 portrait (MADCTL 0xC0) for lock UI */
+void LCD_SetOrientation(bool landscape);
+
+/*! @brief Clear the display with a solid RGB565 color. */
+void LCD_Clear(uint16_t color, uint16_t width, uint16_t height);
 
 /*! @brief Set the active drawing window (inclusive pixel coordinates) and push pixels. */
 void LCD_SetWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);

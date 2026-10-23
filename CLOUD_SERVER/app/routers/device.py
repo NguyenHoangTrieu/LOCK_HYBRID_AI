@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from .. import attendance, cards, enrollment, recognition
+from .. import attendance, cards, enrollment, inout, recognition
 from ..db import get_db
 from ..deps import require_device
 from ..schemas import (
@@ -175,9 +175,22 @@ def attendance_face(
         occurred_at=occurred_at.isoformat(),
     )
     unlock_duration = int(attendance.get_config(db, "unlock_duration_sec")) if result["granted"] else 0
-    # UI-4/SR-8: denial message never varies with how close the match was.
-    message = f"Welcome, {result['name']}" if result["granted"] else "Not recognized"
-    return DecisionResponse(**result, unlock_duration_sec=unlock_duration, message=message)
+    # Note: Do NOT overwrite registered avatar with attendance camera capture (preserve enrolled photo)
+
+    # UI-4/SR-8: clear in/out action message on success
+    wire_name = result["name"]
+    if result["granted"]:
+        if result.get("direction") == "out" and wire_name:
+            wire_name = f"OUT:{wire_name}"
+            message = f"Goodbye, {result['name']}"
+        else:
+            message = f"Welcome, {result['name']}"
+    else:
+        message = "Not recognized"
+
+    resp_dict = dict(result)
+    resp_dict["name"] = wire_name
+    return DecisionResponse(**resp_dict, unlock_duration_sec=unlock_duration, message=message)
 
 
 @router.post("/attendance/card", response_model=DecisionResponse)
@@ -186,10 +199,7 @@ def attendance_card(
     device: sqlite3.Row = Depends(require_device),
     db: sqlite3.Connection = Depends(get_db),
 ):
-    """FR-9..11: kept for backward compatibility and as the server-side
-    mirror of a card decision an Attendance-mode node already made
-    locally (FR-10a) - the response here is informational/for the
-    record, the node does not wait on it to unlock."""
+    """FR-9..11: card attendance evaluated centrally against cloud database."""
     user_row = _card_decision_user(db, body.card_uid)
     result = attendance.decide_and_record(
         db,
@@ -200,8 +210,19 @@ def attendance_card(
         occurred_at=body.occurred_at.isoformat(),
     )
     unlock_duration = int(attendance.get_config(db, "unlock_duration_sec")) if result["granted"] else 0
-    message = f"Welcome, {result['name']}" if result["granted"] else "Not recognized"
-    return DecisionResponse(**result, unlock_duration_sec=unlock_duration, message=message)
+    wire_name = result["name"]
+    if result["granted"]:
+        if result.get("direction") == "out" and wire_name:
+            wire_name = f"OUT:{wire_name}"
+            message = f"Goodbye, {result['name']}"
+        else:
+            message = f"Welcome, {result['name']}"
+    else:
+        message = "Access denied"
+
+    resp_dict = dict(result)
+    resp_dict["name"] = wire_name
+    return DecisionResponse(**resp_dict, unlock_duration_sec=unlock_duration, message=message)
 
 
 @router.post("/attendance/batch", response_model=BatchUploadResponse)

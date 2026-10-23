@@ -94,7 +94,8 @@ CREATE TABLE IF NOT EXISTS attendance_events (
     outcome      TEXT NOT NULL CHECK(outcome IN ('granted','denied')),
     confidence   REAL,
     occurred_at  TEXT NOT NULL,
-    received_at  TEXT NOT NULL
+    received_at  TEXT NOT NULL,
+    direction    TEXT CHECK(direction IN ('in','out'))
 );
 CREATE INDEX IF NOT EXISTS idx_attendance_user_time ON attendance_events(user_id, occurred_at);
 CREATE INDEX IF NOT EXISTS idx_attendance_device_time ON attendance_events(device_id, occurred_at);
@@ -136,6 +137,29 @@ def _migrate_devices_table(conn: sqlite3.Connection) -> None:
             conn.execute(f"ALTER TABLE devices ADD COLUMN {column} {ddl}")
 
 
+def _migrate_attendance_table(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(attendance_events)").fetchall()}
+    if "direction" not in existing:
+        conn.execute("ALTER TABLE attendance_events ADD COLUMN direction TEXT CHECK(direction IN ('in','out'))")
+
+    # Backfill direction for existing granted events that have NULL direction
+    null_events = conn.execute(
+        "SELECT id, user_id, occurred_at FROM attendance_events WHERE outcome = 'granted' AND direction IS NULL ORDER BY occurred_at ASC, id ASC"
+    ).fetchall()
+    if null_events:
+        user_days: dict[tuple[int, str], str] = {}
+        for ev in null_events:
+            uid = ev["user_id"]
+            if uid is None:
+                continue
+            day = ev["occurred_at"][:10]
+            key = (uid, day)
+            last_dir = user_days.get(key, "out")
+            new_dir = "in" if last_dir == "out" else "out"
+            user_days[key] = new_dir
+            conn.execute("UPDATE attendance_events SET direction = ? WHERE id = ?", (new_dir, ev["id"]))
+
+
 def _migrate_legacy_card_uids(conn: sqlite3.Connection) -> None:
     """One-time backfill: before this change, a card assignment was just
     `users.card_uid`. Populate `cards`/`card_assignments` from whatever is
@@ -164,8 +188,8 @@ def _migrate_legacy_card_uids(conn: sqlite3.Connection) -> None:
 # endpoint is what actually changes them afterwards.
 DEFAULT_CONFIG = {
     "recognition_threshold": "0.6",   # AR-3: cosine-similarity cutoff, tune against real enrolled users
-    "unlock_duration_sec": "4",
-    "cooldown_sec": "300",
+    "unlock_duration_sec": "2",
+    "cooldown_sec": "5",
     "request_timeout_sec": "5",       # matches PR-1's 2s target plus margin, not identical to it
     "offline_card_access_enabled": "false",  # FR-23: disabled by default
     "card_store_version": "0",        # FR-52: bumped on every card-authorization change
@@ -177,15 +201,18 @@ def init_db() -> None:
     with get_connection() as conn:
         conn.executescript(SCHEMA)
         _migrate_devices_table(conn)
+        _migrate_attendance_table(conn)
         for key, value in DEFAULT_CONFIG.items():
             conn.execute("INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)", (key, value))
+        # Update cooldown_sec to 5s for responsive check-in / check-out toggling
+        conn.execute("UPDATE config SET value = '5' WHERE key = 'cooldown_sec' AND value IN ('15', '300')")
         _migrate_legacy_card_uids(conn)
         conn.commit()
 
 
 @contextmanager
 def get_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn = sqlite3.connect(DB_PATH, timeout=10, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")

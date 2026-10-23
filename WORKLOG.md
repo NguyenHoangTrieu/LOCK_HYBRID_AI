@@ -6,6 +6,50 @@ phần: `EDGE_NODE/`, `PCB_DES/`, `CLOUD_SERVER/`. Mục đích: một phiên l�
 việc mới (người hoặc AI) đọc file này là nắm được "hiện trạng thật" thay
 vì phải suy luận lại từ code.
 
+## 2026-10-23 (đêm) - Chức năng Check-in / Check-out tự động, Màn hình giám sát Vào/Ra riêng biệt và Xuất báo cáo Excel (.xlsx) nhiều ngày
+
+1. **Cơ chế Check-in / Check-out tự động (`attendance.py`, `inout.py`, `db.py`)**:
+   - Khi quét lần đầu trong ngày: hệ thống tự động ghi nhận là **`CHECK-IN` (VÀO)**.
+   - Khi quét lần tiếp theo: tự động đảo trạng thái sang **`CHECK-OUT` (RA)**.
+   - Hỗ trợ vào/ra nhiều lần trong ngày (Vào -> Ra -> Vào -> Ra...). Sang ngày mới tự động bắt đầu lại từ `CHECK-IN`.
+   - Bổ sung cột `direction TEXT CHECK(direction IN ('in', 'out'))` vào bảng `attendance_events`, tự động migrate dữ liệu cũ.
+   - Điều chỉnh `cooldown_sec` xuống 15 giây (thay vì 300s trước đây) để chống quét đúp ngoài ý muốn nhưng người dùng có thể test hoặc check-out nhanh chóng.
+   - Thiết bị nhận được thông báo phản hồi rõ ràng: `"Check-in: <Tên>"` hoặc `"Check-out: <Tên>"`.
+
+2. **Cửa sổ Giám sát Vào/Ra riêng biệt (`tab-inout` trong Web Admin)**:
+   - Tách biệt hoàn toàn khỏi tab Attendance raw logs.
+   - Hiển thị theo dạng bảng trực quan:
+     * **Ảnh đại diện / Khuôn mặt (Avatar)**: Ảnh thật (được chụp tự động khi nhận diện khuôn mặt hoặc khi enroll) hoặc Avatar SVG chữ cái đầu trang nhã.
+     * **Họ tên & Mã nhân viên / Phòng ban**.
+     * **Trạng thái hiện tại**: Huy hiệu màu nổi bật: `🟢 ĐANG TRONG PHÒNG (IN)` / `🟠 ĐÃ RA NGOÀI (OUT)` / `⚪ Chưa điểm danh`.
+     * **Giờ vào đầu tiên (First In)** & **Giờ ra cuối cùng (Last Out)**.
+     * **Lần quét gần nhất** (Giờ, Hướng, Phương thức: Face / RFID Card, Tên thiết bị).
+     * **Tổng thời gian hiện diện trong ngày** (Tính toán chính xác: e.g. `3h 25m`).
+     * **Chi tiết tất cả các lần quét trong ngày**.
+   - Bộ thẻ thống kê KPI tổng quan: Đang trong phòng, Đã ra ngoài, Chưa điểm danh, Tổng nhân sự.
+   - Bộ lọc nhanh (Tất cả, Đang có mặt, Đã về, Chưa vào), tìm kiếm theo tên hoặc mã NV, chọn ngày xem (Hôm nay, Hôm qua, Ngày tùy chọn).
+   - Tự động cập nhật trực tiếp (Auto-polling mỗi 3s) khi đang mở tab Giám sát.
+
+3. **Xuất báo cáo Excel (.xlsx) nhiều ngày chuyên nghiệp (`openpyxl`, `inout.py`)**:
+   - Tích hợp công cụ xuất file Excel qua endpoint `GET /admin/api/inout/export.xlsx?from_date=...&to_date=...`.
+   - File Excel thiết kế 2 Sheet tiêu chuẩn:
+     * **Sheet 1 - Tổng Hợp Vào-Ra**: Thống kê theo từng ngày & nhân viên (Ngày, Mã NV, Họ tên, Giờ vào đầu, Giờ ra cuối, Tổng giờ làm việc, Số lần quét, Trạng thái cuối ngày).
+     * **Sheet 2 - Nhật Ký Quét Chi Tiết**: Toàn bộ dữ liệu quẹt thẻ/nhận diện (Thời gian, Mã NV, Tên, Hướng Vào/Ra, Kết quả, Phương thức, Thiết bị, Độ tin cậy).
+     * Định dạng phông chữ Segoe UI, tiêu đề màu Navy `#1F4E78`, viền ô, tô màu xanh lá cho `VÀO` và màu cam cho `RA`, tự căn chỉnh độ rộng cột chuẩn đẹp.
+
+## 2026-10-23 - Hỗ trợ song song 2 Mode build: Raw Camera Preview (chỉnh tiêu cự) & Full Smart Lock (khóa thông minh)
+
+Hệ thống có sẵn 2 chế độ build thông qua các cờ CMake và các lệnh tắt trong `build.sh`:
+1. **Mode 1: Raw Camera Preview (Dùng để căn chỉnh tiêu cự/góc nhìn camera)**
+   - Cờ CMake: `-DEDGE_NODE_BUILD=OFF -DLCD_CAMERA_PREVIEW=ON`
+   - Lệnh tắt: `./build.sh cam-build` (biên dịch) hoặc `./build.sh cam-flash` (biên dịch + nạp xuống board).
+   - Đặc điểm: Không chạy State Machine, không RFID, không servo, không AI. Màn hình tự động chuyển sang chế độ Landscape 320x240 (`MADCTL=0x20`), truyền trực tiếp 100% hình ảnh từ camera sensor lên màn hình với tốc độ tối đa (~15-20 fps) kèm đo FPS để người dùng chỉnh góc nhìn và vặn tiêu cự ống kính.
+
+2. **Mode 2: Full Smart Lock Mode (Chế độ khóa chấm công hoàn chỉnh)**
+   - Cờ CMake: `-DEDGE_NODE_BUILD=ON -DLCD_CAMERA_PREVIEW=OFF -DNETWORK_TRANSPORT=ESP32`
+   - Lệnh tắt: `./build.sh lock-build` (biên dịch) hoặc `./build.sh lock-flash` (biên dịch + nạp xuống board).
+   - Đặc điểm: Chế độ dọc Portrait 240x320 (`MADCTL=0xC0`), hình nền núi tuyết, đồng hồ Sans-serif, UltraFace AI NPU, nhận diện khuôn mặt Trieu với vòng tròn phóng to 160px, quẹt thẻ RFID và điều khiển chốt khóa servo.
+
 ## 2026-10-22 (tối) - Chuẩn hóa hiển thị khuôn mặt xoay dọc 100% + Thu phóng trọn vẹn khuôn mặt + Mặc định nhận diện khuôn mặt Trieu
 
 1. **Sửa góc xoay và căn chỉnh khuôn mặt trong khung tròn (`ui_attendance.c`)**:

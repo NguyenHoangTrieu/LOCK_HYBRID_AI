@@ -24,6 +24,7 @@ extern "C" {
 #endif
 
 void BOARD_InitBootPins(void);
+void BOARD_InitButtonPins(void);
 void BOARD_InitDebugUartPins(void);
 void BOARD_InitCameraPins(void);
 void BOARD_InitFlexioPins(void);

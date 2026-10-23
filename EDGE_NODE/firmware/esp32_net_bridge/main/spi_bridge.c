@@ -478,7 +478,7 @@ static void SpiSlaveTask(void *arg)
         haveLastSeq  = true;
         rxFrame->payload_len = proto_be16(rxFrame->payload_len); /* header field is wire-BE; convert once, here, so every handler above can just read it as a plain host value */
 
-        if (xQueueSend(s_requestQueue, rxFrame, 0) != pdTRUE)
+        if (xQueueSend(s_requestQueue, rxFrame, pdMS_TO_TICKS(100)) != pdTRUE)
         {
             ESP_LOGW(TAG, "worker busy, dropping request type 0x%02X (master will see RSP_BUSY and retry)", rxFrame->type);
         }
@@ -509,7 +509,7 @@ static void ConfigureSpiSlave(void)
 void SPI_BRIDGE_Start(void)
 {
     s_txMutex = xSemaphoreCreateMutex();
-    s_requestQueue = xQueueCreate(2, sizeof(proto_frame_t));
+    s_requestQueue = xQueueCreate(8, sizeof(proto_frame_t));
 
     ConfigureSpiSlave();
 

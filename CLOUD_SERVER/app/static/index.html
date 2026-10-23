@@ -10,8 +10,8 @@
   nav { display: flex; gap: 4px; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; }
   nav button { background: none; border: none; padding: 8px 14px; cursor: pointer; border-radius: 6px; font-size: 14px; }
   nav button.active { background: #1a2740; color: #fff; }
-  main { padding: 20px; max-width: 1000px; margin: 0 auto; }
-  section { display: none; background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  section { display: none; background: #fff; border-radius: 8px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow-x: auto; }
   section.active { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
@@ -21,11 +21,50 @@
   button.btn { background: #2563eb; color: #fff; border: none; padding: 7px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
   button.btn.danger { background: #dc2626; }
   button.btn.secondary { background: #64748b; }
-  .pill { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .pill { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .pill.granted { background: #dcfce7; color: #166534; }
   .pill.denied { background: #fee2e2; color: #991b1b; }
   .pill.active { background: #dbeafe; color: #1e40af; }
   .pill.inactive { background: #f1f5f9; color: #64748b; }
+  .pill.in { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-size: 11.5px; padding: 4px 10px; white-space: nowrap !important; }
+  .pill.out { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; font-size: 11.5px; padding: 4px 10px; white-space: nowrap !important; }
+  .pill.not-in { background: #f1f5f9; color: #64748b; font-size: 11.5px; padding: 4px 10px; white-space: nowrap !important; }
+  .avatar-circle { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; display: block; margin: 0 auto; }
+  .avatar-cell { width: 56px; text-align: center; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; }
+  .kpi-title { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 24px; font-weight: 700; color: #0f172a; }
+  .kpi-in { border-left: 4px solid #16a34a; }
+  .kpi-out { border-left: 4px solid #ea580c; }
+  .kpi-absent { border-left: 4px solid #94a3b8; }
+  .kpi-total { border-left: 4px solid #2563eb; }
+  .scan-chip { display: inline-block; font-size: 11.5px; padding: 3px 8px; border-radius: 4px; margin: 2px 3px; white-space: nowrap !important; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .scan-chip.in { background: #dcfce7; color: #166534; }
+  .scan-chip.out { background: #ffedd5; color: #c2410c; }
+  .filter-chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer; color: #475569; }
+  .filter-chip.active { background: #1a2740; color: #fff; border-color: #1a2740; }
+  .card-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 14px; }
+
+  /* In/Out Table Specific Styles - Wide, No Word-Wrap */
+  #inout-table { width: 100%; border-collapse: collapse; min-width: 1050px; }
+  #inout-table th { padding: 10px 12px; background: #f8fafc; color: #475569; font-size: 13px; font-weight: 600; border-bottom: 2px solid #e2e8f0; white-space: nowrap !important; }
+  #inout-table td { padding: 10px 12px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+  #inout-table .col-avatar { width: 56px; text-align: center; white-space: nowrap !important; }
+  #inout-table .col-name { min-width: 130px; white-space: nowrap !important; }
+  #inout-table .col-status { min-width: 180px; white-space: nowrap !important; }
+  #inout-table .col-time { min-width: 100px; text-align: center; white-space: nowrap !important; }
+  #inout-table .col-last { min-width: 150px; white-space: nowrap !important; }
+  #inout-table .col-dur { min-width: 120px; text-align: center; white-space: nowrap !important; }
+  #inout-table .col-log { min-width: 320px; width: auto; }
+
+  /* Edit User Modal */
+  .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .modal-box { background: #fff; border-radius: 10px; padding: 22px 24px; width: 400px; max-width: 92%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1); }
+  .modal-box h3 { margin: 0 0 16px 0; font-size: 16px; color: #0f172a; }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .form-group input { width: 100%; box-sizing: border-box; }
   #login-box { max-width: 320px; margin: 80px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   #login-box input { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
   .muted { color: #888; font-size: 12px; }
@@ -36,11 +75,11 @@
 
 <div id="login-box">
   <h2>LOCK_HYBRID_AI Admin</h2>
-  <input id="login-user" placeholder="Username" value="admin">
-  <input id="login-pass" placeholder="Password" type="password">
+  <input id="login-user" placeholder="Username" value="admin" onkeydown="if(event.key==='Enter')login()">
+  <input id="login-pass" placeholder="Password" type="password" onkeydown="if(event.key==='Enter')login()">
   <button class="btn" onclick="login()">Sign in</button>
   <p class="err" id="login-err"></p>
-  <p class="muted">Bootstrap credentials are printed once in the server's console log on first start.</p>
+  <p class="muted">Default bootstrap password: <code>wdCHNRRgvT8USXIs</code></p>
 </div>
 
 <div id="app" style="display:none">
@@ -49,20 +88,96 @@
     <button class="btn secondary" onclick="logout()">Sign out</button>
   </header>
   <nav>
+    <button data-tab="inout" onclick="showTab('inout')">Giám sát Vào/Ra</button>
     <button data-tab="users" onclick="showTab('users')" class="active">Users</button>
     <button data-tab="devices" onclick="showTab('devices')">Devices</button>
     <button data-tab="cards" onclick="showTab('cards')">Cards</button>
-    <button data-tab="attendance" onclick="showTab('attendance')">Attendance</button>
+    <button data-tab="attendance" onclick="showTab('attendance')">Attendance Logs</button>
     <button data-tab="config" onclick="showTab('config')">Config</button>
   </nav>
   <main>
-    <section id="tab-users" class="active">
-      <div class="row">
-        <input id="user-name" placeholder="Name">
-        <input id="user-org" placeholder="Org ID (optional)">
-        <button class="btn" onclick="createUser()">Add user</button>
+    <section id="tab-inout">
+      <!-- Controls & Multi-day Excel Export -->
+      <div class="card-box">
+        <div class="row" style="margin-bottom:0;">
+          <div style="font-weight:600;font-size:13px;margin-right:8px;">📅 Ngày điểm danh:</div>
+          <input type="date" id="inout-date" onchange="loadInOut()">
+          <button class="btn secondary" onclick="setInOutDate('today')">Hôm nay</button>
+          <button class="btn secondary" onclick="setInOutDate('yesterday')">Hôm qua</button>
+          <button class="btn secondary" onclick="loadInOut()">Làm mới</button>
+
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+            <span style="font-size:13px;font-weight:600;">📊 Xuất Excel nhiều ngày:</span>
+            <input type="date" id="export-from" title="Từ ngày">
+            <span>&rarr;</span>
+            <input type="date" id="export-to" title="Đến ngày">
+            <button class="btn" style="background:#16a34a" onclick="exportInOutExcel()">📥 Xuất file .xlsx</button>
+          </div>
+        </div>
       </div>
-      <table id="users-table"><thead><tr><th>Name</th><th>Org</th><th>Status</th><th>Card</th><th>Face</th><th>Actions</th></tr></thead><tbody></tbody></table>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-in">
+          <div class="kpi-title">Đang trong phòng (IN)</div>
+          <div class="kpi-value" id="stat-in">0</div>
+        </div>
+        <div class="kpi-card kpi-out">
+          <div class="kpi-title">Đã ra ngoài (OUT)</div>
+          <div class="kpi-value" id="stat-out">0</div>
+        </div>
+        <div class="kpi-card kpi-absent">
+          <div class="kpi-title">Chưa điểm danh</div>
+          <div class="kpi-value" id="stat-absent">0</div>
+        </div>
+        <div class="kpi-card kpi-total">
+          <div class="kpi-title">Tổng nhân sự</div>
+          <div class="kpi-value" id="stat-total">0</div>
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="row" style="justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;gap:6px;">
+          <button class="filter-chip active" data-filter="all" onclick="filterInOut('all')">Tất cả</button>
+          <button class="filter-chip" data-filter="in" onclick="filterInOut('in')">🟢 Đang có mặt (IN)</button>
+          <button class="filter-chip" data-filter="out" onclick="filterInOut('out')">🟠 Đã ra ngoài (OUT)</button>
+          <button class="filter-chip" data-filter="not_checked_in" onclick="filterInOut('not_checked_in')">⚪ Chưa vào</button>
+        </div>
+        <input id="inout-search" placeholder="🔍 Tìm theo tên hoặc mã NV..." style="width:240px" oninput="renderInOutTable()">
+      </div>
+
+      <!-- In/Out Personnel Table -->
+      <table id="inout-table">
+        <thead>
+          <tr>
+            <th class="col-avatar">Ảnh</th>
+            <th class="col-name">Họ và Tên</th>
+            <th class="col-status">Trạng thái hiện tại</th>
+            <th class="col-time">Giờ vào đầu</th>
+            <th class="col-time">Giờ ra cuối</th>
+            <th class="col-last">Lần quét gần nhất</th>
+            <th class="col-dur">Thời gian hiện diện</th>
+            <th class="col-log">Nhật ký quét trong ngày</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="tab-users" class="active">
+      <div class="row" style="flex-wrap:wrap;gap:8px;align-items:center;">
+        <input id="user-name" placeholder="Họ và Tên (*)" style="width:160px;">
+        <input id="user-org" placeholder="Phòng ban / Org ID" style="width:150px;">
+        <input id="user-card" placeholder="Mã thẻ RFID UID" style="width:140px;">
+        <label class="btn secondary" style="cursor:pointer;padding:6px 10px;font-size:12px;">
+          📷 Chọn ảnh chân dung
+          <input type="file" id="user-photo" accept="image/*" style="display:none;" onchange="updateCreatePhotoLabel(this)">
+        </label>
+        <span id="user-photo-name" class="muted" style="font-size:12px;"></span>
+        <button class="btn" onclick="createUser()">➕ Thêm nhân viên</button>
+      </div>
+      <table id="users-table"><thead><tr><th style="width:50px;text-align:center;">Ảnh</th><th>Họ và Tên</th><th>Phòng ban</th><th>Trạng thái</th><th>Thẻ RFID</th><th>Khuôn mặt</th><th>Thao tác</th></tr></thead><tbody></tbody></table>
     </section>
 
     <section id="tab-devices">
@@ -71,7 +186,7 @@
         <input id="device-location" placeholder="Location (optional)">
         <button class="btn" onclick="createDevice()">Register device</button>
       </div>
-      <table id="devices-table"><thead><tr><th>ID</th><th>Name</th><th>Location</th><th>Mode</th><th>Enabled</th><th>FW</th><th>Card store</th><th>Last seen</th><th>Enrollment session</th></tr></thead><tbody></tbody></table>
+      <table id="devices-table"><thead><tr><th>ID</th><th>Name</th><th>Location</th><th>Mode</th><th>Enabled</th><th>FW</th><th>Card store</th><th>Last seen</th><th>Enrollment session</th><th>Actions</th></tr></thead><tbody></tbody></table>
     </section>
 
     <section id="tab-cards">
@@ -99,10 +214,52 @@
       <button class="btn" onclick="saveConfig()">Save</button>
     </section>
   </main>
+
+  <!-- Edit User Modal -->
+  <div id="modal-edit-user" class="modal-backdrop" style="display:none">
+    <div class="modal-box">
+      <h3>✏️ Chỉnh sửa thông tin nhân viên <span id="edit-user-badge" class="muted" style="font-size:12px;font-weight:normal;"></span></h3>
+      <input type="hidden" id="edit-user-id">
+      <div style="margin-bottom:14px;text-align:center;">
+        <img id="edit-user-avatar-preview" class="avatar-circle" style="width:78px;height:78px;margin-bottom:8px;border:2px solid #3b82f6;" alt="Avatar">
+        <div>
+          <label class="btn secondary" style="font-size:12px;padding:5px 12px;cursor:pointer;">
+            📷 Chọn ảnh đại diện mới
+            <input type="file" id="edit-user-photo-file" accept="image/*" style="display:none" onchange="previewNewAvatar(this)">
+          </label>
+          <div class="muted" style="font-size:11px;margin-top:4px;">* Ảnh đã chọn sẽ hiển thị cố định và tự động dùng để nhận diện khuôn mặt</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Họ và Tên:</label>
+        <input id="edit-user-name">
+      </div>
+      <div class="form-group">
+        <label>Phòng ban / Org ID:</label>
+        <input id="edit-user-org" placeholder="Ví dụ: ORG-01, IT, Kế toán...">
+      </div>
+      <div class="form-group">
+        <label>Mã thẻ RFID (UID):</label>
+        <input id="edit-user-card" placeholder="Để trống nếu muốn hủy gán thẻ">
+      </div>
+      <div class="form-group" style="margin-bottom:18px;">
+        <label>Trạng thái hoạt động:</label>
+        <select id="edit-user-active">
+          <option value="true">Active (Đang hoạt động)</option>
+          <option value="false">Inactive (Đã vô hiệu hóa)</option>
+        </select>
+      </div>
+      <div id="edit-user-status-msg" style="display:none;font-size:12px;color:#2563eb;margin-bottom:10px;text-align:center;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn secondary" onclick="closeEditModal()">Hủy</button>
+        <button class="btn" id="btn-save-edit" onclick="saveUserEdit()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-let authHeader = sessionStorage.getItem('authHeader') || null;
+let authHeader = localStorage.getItem('authHeader') || null;
 
 function api(path, opts = {}) {
   opts.headers = Object.assign({ 'Authorization': authHeader }, opts.headers || {});
@@ -111,6 +268,9 @@ function api(path, opts = {}) {
     if (!r.ok) throw new Error(await r.text());
     const ct = r.headers.get('content-type') || '';
     return ct.includes('application/json') ? r.json() : r.text();
+  }).catch(err => {
+    console.error(`API ${path} failed:`, err);
+    throw err;
   });
 }
 
@@ -119,7 +279,7 @@ function login() {
   const pass = document.getElementById('login-pass').value;
   authHeader = 'Basic ' + btoa(user + ':' + pass);
   api('/admin/api/users').then(() => {
-    sessionStorage.setItem('authHeader', authHeader);
+    localStorage.setItem('authHeader', authHeader);
     document.getElementById('login-box').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     refreshAll();
@@ -128,47 +288,115 @@ function login() {
 
 function logout() {
   authHeader = null;
-  sessionStorage.removeItem('authHeader');
+  localStorage.removeItem('authHeader');
   document.getElementById('login-box').style.display = 'block';
   document.getElementById('app').style.display = 'none';
 }
 
 function showTab(name) {
+  localStorage.setItem('activeTab', name);
   document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  document.querySelector(`nav button[data-tab="${name}"]`).classList.add('active');
+  const section = document.getElementById('tab-' + name);
+  const btn = document.querySelector(`nav button[data-tab="${name}"]`);
+  if (section) section.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'inout') loadInOut();
+  if (name === 'devices') loadDevices();
+  if (name === 'users') loadUsers();
+  if (name === 'cards') loadCards();
+  if (name === 'attendance') loadAttendance();
+  if (name === 'config') loadConfig();
 }
 
 let usersCache = [];
 
-function refreshAll() { loadUsers(); loadDevices(); loadCards(); loadAttendance(); loadConfig(); }
+async function refreshAll() {
+  initInOutDates();
+  await loadInOut();
+  await loadUsers();
+  await loadDevices();
+  loadCards();
+  loadAttendance();
+  loadConfig();
+  const savedTab = localStorage.getItem('activeTab') || 'inout';
+  showTab(savedTab);
+}
 
 function loadUsers() {
-  api('/admin/api/users').then(users => {
+  return api('/admin/api/users').then(users => {
     usersCache = users;
     const body = document.querySelector('#users-table tbody');
     body.innerHTML = users.map(u => `
       <tr>
-        <td>${u.name}</td>
-        <td>${u.org_id || ''}</td>
+        <td style="text-align:center;"><img src="/admin/api/users/${u.id}/avatar" class="avatar-circle" style="width:34px;height:34px;" alt="${u.name}"></td>
+        <td><b>${u.name}</b></td>
+        <td>${u.org_id || '<span class="muted">--</span>'}</td>
         <td><span class="pill ${u.active ? 'active' : 'inactive'}">${u.active ? 'active' : 'inactive'}</span></td>
-        <td>${u.card_uid ? u.card_uid : `<input size="10" id="card-${u.id}" placeholder="UID"><button class="btn secondary" onclick="assignCard(${u.id})">Set</button>`}</td>
+        <td>${u.card_uid ? `<code>${u.card_uid}</code>` : `<input size="10" id="card-${u.id}" placeholder="UID"><button class="btn secondary" onclick="assignCard(${u.id})">Set</button>`}</td>
         <td>${u.has_face_enrollment ? '✓' : `<input type="file" id="photos-${u.id}" multiple accept="image/*" style="width:120px"><button class="btn secondary" onclick="enrollPhotos(${u.id})">Enroll</button>`}</td>
-        <td>
-          <button class="btn secondary" onclick="toggleActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>
-          <button class="btn danger" onclick="deleteUser(${u.id})">Delete</button>
+        <td style="white-space:nowrap;">
+          <button class="btn" style="background:#0284c7;padding:5px 10px;margin-right:2px;" onclick="openEditUserModal(${u.id})">Edit</button>
+          <button class="btn secondary" style="padding:5px 10px;margin-right:2px;" onclick="toggleActive(${u.id}, ${!u.active})">${u.active ? 'Deactivate' : 'Reactivate'}</button>
+          <button class="btn danger" style="padding:5px 10px;" onclick="deleteUser(${u.id})">Delete</button>
         </td>
       </tr>`).join('');
-  });
+  }).catch(e => console.error('loadUsers error:', e));
 }
 
-function createUser() {
-  const name = document.getElementById('user-name').value;
-  const org = document.getElementById('user-org').value;
-  if (!name) return;
-  api(`/admin/api/users?name=${encodeURIComponent(name)}&org_id=${encodeURIComponent(org)}`, { method: 'POST' })
-    .then(() => { document.getElementById('user-name').value = ''; document.getElementById('user-org').value = ''; loadUsers(); });
+function updateCreatePhotoLabel(input) {
+  const span = document.getElementById('user-photo-name');
+  if (input.files && input.files[0]) {
+    span.textContent = '✓ ' + input.files[0].name;
+  } else {
+    span.textContent = '';
+  }
+}
+
+async function createUser() {
+  const nameInput = document.getElementById('user-name');
+  const orgInput = document.getElementById('user-org');
+  const cardInput = document.getElementById('user-card');
+  const photoInput = document.getElementById('user-photo');
+
+  const name = nameInput.value.trim();
+  const org = orgInput.value.trim();
+  const card = cardInput ? cardInput.value.trim() : '';
+
+  if (!name) {
+    alert('Họ và Tên không được để trống');
+    return;
+  }
+
+  let url = `/admin/api/users?name=${encodeURIComponent(name)}`;
+  if (org) url += `&org_id=${encodeURIComponent(org)}`;
+  if (card) url += `&card_uid=${encodeURIComponent(card)}`;
+
+  try {
+    const res = await api(url, { method: 'POST' });
+    const newUserId = res.id;
+
+    if (photoInput && photoInput.files && photoInput.files[0]) {
+      const form = new FormData();
+      form.append('avatar', photoInput.files[0]);
+      await api(`/admin/api/users/${newUserId}/avatar`, { method: 'POST', body: form });
+    }
+
+    nameInput.value = '';
+    orgInput.value = '';
+    if (cardInput) cardInput.value = '';
+    if (photoInput) photoInput.value = '';
+    const span = document.getElementById('user-photo-name');
+    if (span) span.textContent = '';
+
+    await loadUsers();
+    await loadInOut();
+    await loadDevices();
+    await loadCards();
+    alert('Thêm nhân viên mới thành công!');
+  } catch (err) {
+    alert('Lỗi thêm nhân viên: ' + (err.message || err));
+  }
 }
 
 function toggleActive(id, active) {
@@ -186,6 +414,86 @@ function deleteUser(id) {
   api(`/admin/api/users/${id}`, { method: 'DELETE' }).then(loadUsers);
 }
 
+let selectedAvatarFile = null;
+
+function openEditUserModal(id) {
+  const u = usersCache.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('edit-user-id').value = u.id;
+  document.getElementById('edit-user-badge').textContent = `(#${u.id})`;
+  document.getElementById('edit-user-name').value = u.name;
+  document.getElementById('edit-user-org').value = u.org_id || '';
+  document.getElementById('edit-user-card').value = u.card_uid || '';
+  document.getElementById('edit-user-active').value = u.active ? 'true' : 'false';
+  document.getElementById('edit-user-avatar-preview').src = `/admin/api/users/${u.id}/avatar?t=${Date.now()}`;
+  document.getElementById('edit-user-photo-file').value = '';
+  document.getElementById('edit-user-status-msg').style.display = 'none';
+  selectedAvatarFile = null;
+  document.getElementById('modal-edit-user').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit-user').style.display = 'none';
+  selectedAvatarFile = null;
+}
+
+function previewNewAvatar(input) {
+  if (input.files && input.files[0]) {
+    selectedAvatarFile = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('edit-user-avatar-preview').src = e.target.result;
+    };
+    reader.readAsDataURL(selectedAvatarFile);
+  }
+}
+
+async function saveUserEdit() {
+  const id = document.getElementById('edit-user-id').value;
+  const name = document.getElementById('edit-user-name').value.trim();
+  const org = document.getElementById('edit-user-org').value.trim();
+  const card = document.getElementById('edit-user-card').value.trim();
+  const active = document.getElementById('edit-user-active').value === 'true';
+  const statusMsg = document.getElementById('edit-user-status-msg');
+  const btnSave = document.getElementById('btn-save-edit');
+
+  if (!name) {
+    alert('Họ và tên không được để trống');
+    return;
+  }
+
+  try {
+    if (btnSave) btnSave.disabled = true;
+    if (statusMsg) {
+      statusMsg.style.display = 'block';
+      statusMsg.textContent = 'Đang lưu thông tin...';
+    }
+
+    let url = `/admin/api/users/${id}?name=${encodeURIComponent(name)}&org_id=${encodeURIComponent(org)}&card_uid=${encodeURIComponent(card)}&active=${active}`;
+    await api(url, { method: 'PATCH' });
+
+    if (selectedAvatarFile) {
+      if (statusMsg) statusMsg.textContent = 'Đang tải ảnh và cập nhật nhận diện khuôn mặt...';
+      const form = new FormData();
+      form.append('avatar', selectedAvatarFile);
+      const res = await api(`/admin/api/users/${id}/avatar`, { method: 'POST', body: form });
+      if (res && res.face_enrolled) {
+        if (statusMsg) statusMsg.textContent = '✓ Đã cập nhật ảnh và kích hoạt nhận diện khuôn mặt!';
+      }
+    }
+
+    closeEditModal();
+    await loadUsers();
+    await loadInOut();
+    await loadCards();
+    alert('Đã cập nhật thông tin người dùng thành công!');
+  } catch (err) {
+    alert('Lỗi cập nhật: ' + (err.message || err));
+  } finally {
+    if (btnSave) btnSave.disabled = false;
+  }
+}
+
 function enrollPhotos(id) {
   const input = document.getElementById(`photos-${id}`);
   if (!input.files.length) return;
@@ -195,8 +503,10 @@ function enrollPhotos(id) {
 }
 
 function loadDevices() {
-  api('/admin/api/devices').then(devices => {
-    document.querySelector('#devices-table tbody').innerHTML = devices.map(d => `
+  return api('/admin/api/devices').then(devices => {
+    document.querySelector('#devices-table tbody').innerHTML = devices.map(d => {
+      const safeName = (d.name || '').replace(/['\\]/g, '');
+      return `
       <tr>
         <td>${d.id}</td><td>${d.name}</td><td>${d.location || ''}</td>
         <td>
@@ -210,15 +520,17 @@ function loadDevices() {
         <td>${d.card_store_version}</td>
         <td>${d.last_seen_at || 'never'}</td>
         <td>${enrollmentCellHtml(d)}</td>
+        <td><button class="btn danger" onclick="deleteDevice('${d.id}', '${safeName}')">Delete</button></td>
       </tr>
-    `).join('');
-  });
+    `;
+    }).join('');
+  }).catch(e => console.error('loadDevices error:', e));
 }
 
 function enrollmentCellHtml(d) {
   if (d.mode !== 'enrollment') return '<span class="muted">n/a (Attendance mode)</span>';
   if (d.enrollment_session) {
-    return `Capturing card for <b>${d.enrollment_session.user_name}</b> (${d.enrollment_session.expires_in_sec}s left)
+    return `Capturing card for <b>${d.enrollment_session.user_name}</b> (<span class="session-timer" data-sec="${d.enrollment_session.expires_in_sec}">${d.enrollment_session.expires_in_sec}</span>s left)
             <button class="btn secondary" onclick="cancelEnrollment('${d.id}')">Cancel</button>`;
   }
   const options = usersCache.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
@@ -247,18 +559,30 @@ function cancelEnrollment(deviceId) {
 }
 
 function createDevice() {
-  const name = document.getElementById('device-name').value;
-  const location = document.getElementById('device-location').value;
-  if (!name) return;
+  const name = document.getElementById('device-name').value.trim();
+  const location = document.getElementById('device-location').value.trim();
+  if (!name) {
+    alert('Please enter a device name');
+    return;
+  }
   api('/admin/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, location: location || null }) })
     .then(res => {
+      document.getElementById('device-name').value = '';
+      document.getElementById('device-location').value = '';
       alert(`Device registered.\nID: ${res.id}\nAPI key (shown once): ${res.api_key}\n\nPut this key in the device's X-Device-Key header - it cannot be retrieved again.`);
       loadDevices();
-    });
+    }).catch(e => alert('Failed to register device: ' + e.message));
+}
+
+function deleteDevice(id, name) {
+  if (!confirm(`Permanently delete device "${name || id}" (${id})?`)) return;
+  api(`/admin/api/devices/${id}`, { method: 'DELETE' })
+    .then(() => loadDevices())
+    .catch(e => alert('Failed to delete device: ' + e.message));
 }
 
 function loadCards() {
-  api('/admin/api/cards').then(list => {
+  return api('/admin/api/cards').then(list => {
     document.querySelector('#cards-table tbody').innerHTML = list.map(c => `
       <tr>
         <td>${c.uid}</td>
@@ -271,7 +595,7 @@ function loadCards() {
           ${c.state === 'lost' ? `<button class="btn secondary" onclick="unlostCard('${c.uid}')">Unmark lost</button>` : ''}
         </td>
       </tr>`).join('');
-  });
+  }).catch(e => console.error('loadCards error:', e));
 }
 
 function releaseCard(uid) {
@@ -291,7 +615,7 @@ function unlostCard(uid) {
 function loadAttendance() {
   const outcome = document.getElementById('att-outcome').value;
   const qs = outcome ? `?outcome=${outcome}` : '';
-  api('/admin/api/attendance' + qs).then(rows => {
+  return api('/admin/api/attendance' + qs).then(rows => {
     document.querySelector('#attendance-table tbody').innerHTML = rows.map(r => `
       <tr>
         <td>${r.occurred_at}</td>
@@ -301,17 +625,17 @@ function loadAttendance() {
         <td><span class="pill ${r.outcome}">${r.outcome}</span></td>
         <td>${r.confidence != null ? r.confidence.toFixed(3) : ''}</td>
       </tr>`).join('');
-  });
+  }).catch(e => console.error('loadAttendance error:', e));
 }
 
 function loadConfig() {
-  api('/admin/api/config').then(c => {
+  return api('/admin/api/config').then(c => {
     document.getElementById('cfg-threshold').value = c.recognition_threshold;
     document.getElementById('cfg-unlock').value = c.unlock_duration_sec;
     document.getElementById('cfg-cooldown').value = c.cooldown_sec;
     document.getElementById('cfg-timeout').value = c.request_timeout_sec;
     document.getElementById('cfg-offline').value = String(c.offline_card_access_enabled);
-  });
+  }).catch(e => console.error('loadConfig error:', e));
 }
 
 function saveConfig() {
@@ -326,11 +650,167 @@ function saveConfig() {
     .then(() => alert('Saved'));
 }
 
+/* ------------------------------------------------------------------ */
+/* In/Out Monitor & Multi-day Excel Export                             */
+/* ------------------------------------------------------------------ */
+let inoutDataCache = null;
+let currentInOutFilter = 'all';
+
+function initInOutDates() {
+  const today = new Date().toISOString().split('T')[0];
+  const past = new Date();
+  past.setDate(past.getDate() - 7);
+  const past7 = past.toISOString().split('T')[0];
+
+  const inoutDateInput = document.getElementById('inout-date');
+  if (inoutDateInput && !inoutDateInput.value) inoutDateInput.value = today;
+
+  const expFrom = document.getElementById('export-from');
+  if (expFrom && !expFrom.value) expFrom.value = past7;
+
+  const expTo = document.getElementById('export-to');
+  if (expTo && !expTo.value) expTo.value = today;
+}
+
+function setInOutDate(which) {
+  const d = new Date();
+  if (which === 'yesterday') d.setDate(d.getDate() - 1);
+  document.getElementById('inout-date').value = d.toISOString().split('T')[0];
+  loadInOut();
+}
+
+function filterInOut(status) {
+  currentInOutFilter = status;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.filter-chip[data-filter="${status}"]`);
+  if (btn) btn.classList.add('active');
+  renderInOutTable();
+}
+
+function loadInOut() {
+  const dateVal = document.getElementById('inout-date').value || new Date().toISOString().split('T')[0];
+  return api(`/admin/api/inout?date=${encodeURIComponent(dateVal)}`).then(data => {
+    inoutDataCache = data;
+    document.getElementById('stat-in').textContent = data.summary.currently_in;
+    document.getElementById('stat-out').textContent = data.summary.currently_out;
+    document.getElementById('stat-absent').textContent = data.summary.not_checked_in;
+    document.getElementById('stat-total').textContent = data.summary.total_users;
+    renderInOutTable();
+  }).catch(e => console.error('loadInOut error:', e));
+}
+
+function renderInOutTable() {
+  if (!inoutDataCache) return;
+  const q = (document.getElementById('inout-search').value || '').toLowerCase().trim();
+  let list = inoutDataCache.users;
+  if (currentInOutFilter !== 'all') {
+    list = list.filter(u => u.status === currentInOutFilter);
+  }
+  if (q) {
+    list = list.filter(u => u.name.toLowerCase().includes(q) || (u.org_id && u.org_id.toLowerCase().includes(q)));
+  }
+
+  const tbody = document.querySelector('#inout-table tbody');
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;padding:24px;">Không có dữ liệu phù hợp</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(u => {
+    let statusBadge = '';
+    if (u.status === 'in') {
+      statusBadge = '<span class="pill in">🟢 ĐANG TRONG PHÒNG (IN)</span>';
+    } else if (u.status === 'out') {
+      statusBadge = '<span class="pill out">🟠 ĐÃ RA NGOÀI (OUT)</span>';
+    } else {
+      statusBadge = '<span class="pill not-in">⚪ Chưa điểm danh</span>';
+    }
+
+    const eventChips = (u.events || []).map(e => `
+      <span class="scan-chip ${e.direction}" title="${e.method} via ${e.device}">
+        ${e.time} (${e.direction === 'in' ? 'VÀO' : 'RA'})
+      </span>
+    `).join('');
+
+    return `
+      <tr>
+        <td class="col-avatar">
+          <img src="${u.avatar_url}" class="avatar-circle" alt="${u.name}">
+        </td>
+        <td class="col-name">
+          <div style="font-weight:600;font-size:14px;color:#0f172a;">${u.name}</div>
+          <div style="color:#64748b;font-size:11px;">${u.org_id || 'Chưa gán phòng ban'}</div>
+        </td>
+        <td class="col-status">${statusBadge}</td>
+        <td class="col-time"><b style="font-size:13px;font-family:ui-monospace,monospace;">${u.first_in_time || '&mdash;'}</b></td>
+        <td class="col-time"><b style="font-size:13px;font-family:ui-monospace,monospace;">${u.last_out_time || '&mdash;'}</b></td>
+        <td class="col-last">
+          ${u.last_event_time ? `<span style="font-weight:600;font-family:ui-monospace,monospace;">${u.last_event_time}</span> <span style="color:#64748b">&bull; ${u.last_method === 'face' ? '👤 Face' : '💳 Card'}</span>` : '&mdash;'}
+        </td>
+        <td class="col-dur">
+          <div style="font-weight:700;color:#0f172a;font-size:13.5px;">${u.duration_str}</div>
+          ${u.scans_count > 0 ? `<div style="font-size:11px;color:#64748b;">${u.scans_count} lượt quét</div>` : ''}
+        </td>
+        <td class="col-log">${eventChips || '<span class="muted">Chưa có lượt quét</span>'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function exportInOutExcel() {
+  const fromDate = document.getElementById('export-from').value;
+  const toDate = document.getElementById('export-to').value;
+  let url = '/admin/api/inout/export.xlsx';
+  const params = [];
+  if (fromDate) params.push(`from_date=${encodeURIComponent(fromDate)}`);
+  if (toDate) params.push(`to_date=${encodeURIComponent(toDate)}`);
+  if (params.length) url += '?' + params.join('&');
+
+  fetch(url, { headers: { 'Authorization': authHeader } })
+    .then(res => {
+      if (!res.ok) throw new Error('Xuất file thất bại: ' + res.statusText);
+      return res.blob();
+    })
+    .then(blob => {
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `InOut_Report_${fromDate || 'start'}_to_${toDate || 'today'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    })
+    .catch(err => alert(err.message));
+}
+
 if (authHeader) {
   document.getElementById('login-box').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   refreshAll();
 }
+
+/* Live second-by-second countdown for enrollment sessions */
+setInterval(() => {
+  document.querySelectorAll('.session-timer').forEach(el => {
+    let sec = parseInt(el.dataset.sec, 10);
+    if (sec > 0) {
+      sec--;
+      el.dataset.sec = sec;
+      el.textContent = sec;
+    }
+  });
+}, 1000);
+
+/* Auto-poll devices tab & inout tab every 3s for live updates */
+setInterval(() => {
+  if (authHeader) {
+    if (document.getElementById('tab-devices').classList.contains('active')) {
+      loadDevices();
+    }
+    if (document.getElementById('tab-inout').classList.contains('active')) {
+      loadInOut();
+    }
+  }
+}, 3000);
 </script>
 </body>
 </html>

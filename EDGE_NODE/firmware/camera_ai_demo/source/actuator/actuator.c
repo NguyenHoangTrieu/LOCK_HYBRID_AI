@@ -33,33 +33,45 @@
 #define ACTUATOR_PWM_FREQ_HZ   50U      /* standard analog/hobby servo PWM rate */
 #define ACTUATOR_PERIOD_TICKS  (ACTUATOR_TIMER_TICK_HZ / ACTUATOR_PWM_FREQ_HZ) /* 20000 ticks = 20ms */
 
-/* SG90-style generic defaults - NOT measured against the real servo on
- * this board. Confirm SIG/VCC/GND wiring and these two values on real
- * hardware before trusting them (see actuator.h). */
+/* SG90-style generic defaults:
+ * 1.0ms (1000us) = 0 deg (locked)
+ * 2.0ms (2000us) = ~90/180 deg (unlocked)
+ * 50Hz PWM rate = 20ms period (20000us)
+ */
 #define ACTUATOR_LOCKED_PULSE_US   1000U
-#define ACTUATOR_UNLOCKED_PULSE_US 1500U
+#define ACTUATOR_UNLOCKED_PULSE_US 2000U
 
 static bool s_unlocked = false;
 
 static void ACTUATOR_SetPulseUs(uint32_t pulseUs)
 {
+    if (pulseUs > ACTUATOR_PERIOD_TICKS)
+    {
+        pulseUs = ACTUATOR_PERIOD_TICKS;
+    }
+    /* LPC/MCX CTIMER in PWM mode (PWMC bit set) drives the match pin LOW
+     * when the counter matches the period and resets to 0.
+     * The pin drives HIGH when the counter reaches MR[pulseChannel].
+     * Therefore, HIGH time duration = ACTUATOR_PERIOD_TICKS - MR[pulseChannel].
+     * To obtain a HIGH pulse width of pulseUs microseconds:
+     * MR[pulseChannel] must be set to (ACTUATOR_PERIOD_TICKS - pulseUs).
+     */
+    uint32_t pulseMatchVal = ACTUATOR_PERIOD_TICKS - pulseUs;
     (void)CTIMER_SetupPwmPeriod(ACTUATOR_CTIMER_BASE, ACTUATOR_PERIOD_CHANNEL, ACTUATOR_PULSE_CHANNEL,
-                                ACTUATOR_PERIOD_TICKS - 1U, pulseUs, false);
+                                ACTUATOR_PERIOD_TICKS - 1U, pulseMatchVal, false);
 }
 
 void ACTUATOR_Init(void)
 {
-    /* Take P0_10 from its pin_mux.c boot-default (plain GPIO, idle high -
-     * see actuator.h) over to CT0_MAT0. Only from here on can the pin
-     * actually pulse; everything before this call is the safe idle state. */
+    /* Take P0_10 (Arduino D9 / J2-4) to CT0_MAT0 */
     const port_pin_config_t pwmPinConfig = {
         .pullSelect          = kPORT_PullDisable,
         .pullValueSelect     = kPORT_LowPullResistor,
         .slewRate            = kPORT_FastSlewRate,
         .passiveFilterEnable = kPORT_PassiveFilterDisable,
         .openDrainEnable     = kPORT_OpenDrainDisable,
-        .driveStrength       = kPORT_LowDriveStrength,
-        .mux                 = kPORT_MuxAlt4, /* CT0_MAT0, confirmed against the SDK's own frdmmcxn947 ctimer examples */
+        .driveStrength       = kPORT_HighDriveStrength,
+        .mux                 = kPORT_MuxAlt4, /* CT0_MAT0 */
         .inputBuffer         = kPORT_InputBufferEnable,
         .invertInput         = kPORT_InputNormal,
         .lockRegister        = kPORT_UnlockRegister,
@@ -69,32 +81,39 @@ void ACTUATOR_Init(void)
     CLOCK_SetClkDiv(kCLOCK_DivCtimer0Clk, 1U);
     CLOCK_AttachClk(kFRO_HF_to_CTIMER0);
 
+    uint32_t ctimerClk = CLOCK_GetCTimerClkFreq(0);
     ctimer_config_t config;
     CTIMER_GetDefaultConfig(&config);
-    /* FRO_HF is 48MHz on this board (see hardware_init.c's other clock
-     * comments) - prescale 47 (divide by 48) gives an even 1MHz tick. */
-    config.prescale = 47U;
+    if (ctimerClk >= 1000000U)
+    {
+        config.prescale = (ctimerClk / 1000000U) - 1U;
+    }
+    else
+    {
+        config.prescale = 47U;
+    }
     CTIMER_Init(ACTUATOR_CTIMER_BASE, &config);
 
-    /* Locked before the timer starts - no unlock pulse can reach the
-     * servo ahead of this (SR-6). */
     ACTUATOR_SetPulseUs(ACTUATOR_LOCKED_PULSE_US);
     s_unlocked = false;
     CTIMER_StartTimer(ACTUATOR_CTIMER_BASE);
 
-    PRINTF("Actuator: servo PWM on P0_10 (CT0_MAT0), locked\r\n");
+    PRINTF("Actuator: servo PWM on P0_10 (CT0_MAT0 / Arduino D9 / J2-4), clock=%lu Hz, prescale=%u, locked (%u us pulse)\r\n",
+           ctimerClk, (unsigned int)config.prescale, (unsigned int)ACTUATOR_LOCKED_PULSE_US);
 }
 
 void ACTUATOR_Unlock(void)
 {
     ACTUATOR_SetPulseUs(ACTUATOR_UNLOCKED_PULSE_US);
     s_unlocked = true;
+    PRINTF("Actuator: UNLOCKED (%u us pulse)\r\n", (unsigned int)ACTUATOR_UNLOCKED_PULSE_US);
 }
 
 void ACTUATOR_Lock(void)
 {
     ACTUATOR_SetPulseUs(ACTUATOR_LOCKED_PULSE_US);
     s_unlocked = false;
+    PRINTF("Actuator: LOCKED (%u us pulse)\r\n", (unsigned int)ACTUATOR_LOCKED_PULSE_US);
 }
 
 bool ACTUATOR_IsUnlocked(void)
