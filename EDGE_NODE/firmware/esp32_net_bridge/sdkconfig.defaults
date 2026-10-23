@@ -1,0 +1,9 @@
+# ESP32-C5 target (set by build.sh via `idf.py set-target esp32c5`, these
+# are just the config defaults applied on top of that).
+CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+
+# WiFi + mbedTLS (HTTPS) pushes the default 1MB single-app partition over
+# its limit - use the 2MB "large" single-app preset instead of hand-rolling
+# a custom partitions.csv for one app that doesn't need OTA.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y

@@ -333,6 +333,48 @@ Camera_AI_Test1/
         ffconf.h                 <- hand-written FatFs config (RAM-minimal: FF_FS_TINY=1, no LFN)
 ```
 
+## Edge AI Node build (RFID + servo latch + state machine)
+
+```bash
+./firmware/camera_ai_demo/build.sh build -DEDGE_NODE_BUILD=ON
+```
+
+Opt-in (`EDGE_NODE_BUILD`, default `OFF`), separate `source/main_edge_node.c`
+instead of `main.c` - the bring-up build above is untouched and stays the
+default/rollback, same pattern as `DUALCORE_RTOS`. Builds `-Werror` clean
+and links (confirmed by actually building it, not just by inspection) but
+**has not been flashed to real hardware** - only the camera+AI portion it
+reuses from `main.c` inherits that build's hardware-confirmed status.
+
+Adds, on top of the camera+AI+LCD+SD pipeline:
+- `source/rfid/` - MFRC522 driver (SPI, shared bus): REQA -> anticollision
+  -> select, single 4-byte UID only (HI-2/FR-9/FR-10).
+- `source/actuator/` - servo latch on CTIMER0/CT0_MAT0 (P0_10, confirmed
+  against the SDK's own frdmmcxn947 `ctimer/simple_pwm` example), boots
+  locked, only one call site can unlock (HI-3/HI-4/SR-6). Pulse-width
+  constants are generic SG90 defaults, **not measured against the real
+  servo** - see `source/actuator/actuator.h`.
+- `source/state_machine/` - `ARCHITECTURE.md` Sec.2.4's Boot/Idle/
+  Waiting/Granted/Denied/Offline/Fault states; owns the FR-2 stability
+  counter and is the only code path allowed to unlock the latch.
+- `source/network/network_client.h` - the device<->Cloud Backend seam
+  (CI-1..5), with two selectable transports (`-DNETWORK_TRANSPORT=STUB`
+  default, or `=ESP32`):
+  - `network_client_stub.c` (default) - always reports offline, so the
+    device correctly runs the Offline/FR-18 timeout path rather than
+    faking a connection it doesn't have.
+  - `network_client_esp32.c` - the real SPI link to
+    `../esp32_net_bridge` (a separate ESP-IDF project - see its own
+    README). Builds clean on both sides; **not confirmed on real
+    hardware** - no two physical boards tested talking to each other
+    yet. See `source/network/protocol.h` for the wire format and why
+    it's shaped the way it is (no handshake GPIO on this board).
+
+Not in this build yet: offline event buffering (FR-19..25), the INA228
+power-monitor driver (wired on the baseboard, not SRS-required), and the
+server-side recognition model (see CLOUD_SERVER/README.md and the
+repository root README's task list).
+
 ## Known Limitations
 
 - LCD shows text status lines only, not a live image or bounding boxes

@@ -1,0 +1,55 @@
+menu "LOCK_HYBRID_AI Edge Node Bridge"
+
+    config LOCK_HYBRID_WIFI_SSID
+        string "WiFi SSID"
+        default "changeme"
+        help
+            SSID of the site's WiFi network (ASM-1).
+
+    config LOCK_HYBRID_WIFI_PASSWORD
+        string "WiFi password"
+        default "changeme"
+        help
+            WPA2-PSK password. Stored in plaintext in sdkconfig like any
+            other ESP-IDF project - fine for a dev build, but review
+            before shipping a device (flash encryption / NVS-based
+            provisioning would be the real fix, neither is set up here).
+
+    config LOCK_HYBRID_BACKEND_BASE_URL
+        string "Cloud Backend base URL"
+        default "http://192.168.1.100:8000"
+        help
+            e.g. http://<server-ip>:8000 for the CLOUD_SERVER dev
+            instance, or an https:// URL once a reverse proxy with a real
+            certificate is in front of it (CI-1 requires encryption in
+            transit - this dev default does not provide that).
+
+    config LOCK_HYBRID_DEVICE_API_KEY
+        string "Device API key"
+        default ""
+        help
+            The raw key shown once by POST /admin/api/devices in the
+            admin web app (CLOUD_SERVER) when this device was registered.
+            Cannot be recovered from the server afterwards - re-register
+            the device if it's lost.
+
+    config LOCK_HYBRID_BACKEND_TIMEOUT_MS
+        int "Backend HTTP request timeout (ms)"
+        default 8000
+        help
+            Generous relative to PR-1's 2s device-to-unlock target - the
+            MCXN947 side's own NET_RequestDecision() timeout is what
+            actually governs the user-facing latency budget; this is a
+            backstop so a hung TCP connection doesn't wedge the worker
+            task forever.
+
+    config LOCK_HYBRID_BACKEND_SKIP_TLS_VERIFY
+        bool "Skip TLS certificate verification (dev only)"
+        default n
+        help
+            Only for testing against a self-signed cert during
+            development. Leave OFF for anything resembling a real
+            deployment - CI-1 means "actually encrypted and verified",
+            not just "the bytes happen to be TLS".
+
+endmenu

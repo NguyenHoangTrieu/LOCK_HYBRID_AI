@@ -4,7 +4,9 @@ Face and RFID attendance / access-control system. A door-mounted **Edge AI Node*
 detects faces and reads RFID cards; a **Cloud Backend** identifies people, stores
 attendance records, and serves an admin web app. Full detail lives in
 [ARCHITECTURE.md](ARCHITECTURE.md) (design) and [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md)
-(requirements, IEEE 830 / ISO-IEC-IEEE 29148 style).
+(requirements, IEEE 830 / ISO-IEC-IEEE 29148 style). For "what actually
+happened and what's still open" across the whole repo (not just one
+subproject), see [WORKLOG.md](WORKLOG.md).
 
 ## Why the split
 
@@ -52,18 +54,30 @@ documented the independent history of the prototype and don't apply once
 folded into this repo. The firmware source, board port, and AI model files
 are unchanged from the original project.
 
-What still needs to be added on top of this bring-up code to satisfy the
-Edge AI Node requirements in the SRS: RFID reader (MFRC522) integration
-(HI-2), servo-motor latch control with fail-locked behavior (HI-3, HI-4,
-SR-6), the state machine described in ARCHITECTURE.md §2.4, network
-communication with the Cloud Backend over the ESP32-C5 DevKit 2.0 (CON-2, CI-1
-to CI-5), and offline event buffering (FR-19 to FR-25).
+RFID (MFRC522), servo-latch control (fail-locked, HI-3/HI-4/SR-6), the
+ARCHITECTURE.md §2.4 state machine, and now the ESP32-C5 network
+transport (CON-2, CI-1 to CI-5 - both the ESP-IDF firmware in
+`EDGE_NODE/firmware/esp32_net_bridge/` and the MCXN947-side SPI driver)
+are implemented and build clean on both sides. None of this has been
+flashed to real hardware yet, and the ESP32<->MCXN947 link in particular
+has not been verified between two physical boards - see
+`EDGE_NODE/firmware/esp32_net_bridge/README.md`. Still missing: offline
+event buffering (FR-19 to FR-25) and a real recognition model on the
+server (see `CLOUD_SERVER/README.md`).
 
 ### CLOUD_SERVER
 
-Not yet started. Per ARCHITECTURE.md §3, this will hold the API layer,
-recognition service (align → embed → match), attendance service, database,
-and the admin web app.
+FastAPI + SQLite implementation of ARCHITECTURE.md §3: device auth, the
+face/card attendance API, attendance records with cooldown, and an admin
+web app (enrollment, cards, reports, config) - see
+[CLOUD_SERVER/README.md](CLOUD_SERVER/README.md). Verified end-to-end
+against a running instance, including through the browser UI, not just
+written against the spec. The one piece that is a placeholder rather than
+real: the recognition model itself (no face-detection/embedding model is
+wired in - see that README's Status section before trusting any accuracy
+number). Not implemented: TLS termination (put a reverse proxy in front
+for real deployment) and offline event buffering on the device side to
+actually feed `/attendance/batch`.
 
 ### PCB_DES
 

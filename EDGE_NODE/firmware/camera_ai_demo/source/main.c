@@ -332,10 +332,11 @@ int main(void) {
         float scaleY = (float)DEMO_BUFFER_HEIGHT / (float)AI_MODEL_GetInputHeight();
         for (uint32_t i = 0; i < aiResult.boxCount; i++) {
           const ai_bbox_t *box = &aiResult.boxes[i];
+          uint16_t boxColor = (i == 0U) ? 0x07E0U /* green */ : 0xFFE0U /* yellow */;
           BBOX_DrawRect(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT,
                         (int)((float)box->x * scaleX), (int)((float)box->y * scaleY),
                         (int)((float)box->width * scaleX), (int)((float)box->height * scaleY),
-                        0x07E0U /* green */);
+                        boxColor);
           PRINTF("AI result: box[%u] label=%s x=%u y=%u w=%u h=%u score=%d%%\r\n",
                  i, box->label, box->x, box->y, box->width, box->height,
                  (int)(box->score * 100.0f));

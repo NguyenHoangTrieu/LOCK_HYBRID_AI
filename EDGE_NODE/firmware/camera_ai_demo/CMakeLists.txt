@@ -512,9 +512,65 @@ else()
     mcux_add_macro(CC "-DDEMO_AI_MODEL_USE_NPU=0" CX "-DDEMO_AI_MODEL_USE_NPU=0")
 endif()
 
+# Edge AI Node application: camera+AI (proven, see main.c) plus RFID,
+# servo latch, and the device state machine (ARCHITECTURE.md Sec.2.4) -
+# the pieces README.md's "what still needs to be added" list calls out.
+# OFF by default so the hardware-confirmed camera/AI/LCD/SD bring-up build
+# (main.c) stays the default and untouched - same rollback reasoning
+# CMakeLists.txt already applies to DUALCORE_RTOS. Not yet confirmed on
+# real hardware - see source/main_edge_node.c's header comment.
+option(EDGE_NODE_BUILD "Build the full Edge AI Node app (camera+AI+RFID+servo+state machine) instead of the camera/AI bring-up demo (main.c)" OFF)
+# STUB (default): network_client_stub.c, always reports offline - see that
+# file. ESP32: the real SPI transport to EDGE_NODE/firmware/esp32_net_bridge
+# (network_client_esp32.c) - not yet confirmed on real hardware (no two
+# physical boards tested together), see that file and protocol.h before
+# flipping this on for anything beyond bench testing.
+set(NETWORK_TRANSPORT "STUB" CACHE STRING "Device<->Cloud Backend transport: STUB (always offline) or ESP32 (real SPI link to esp32_net_bridge, unconfirmed on hardware)")
+set_property(CACHE NETWORK_TRANSPORT PROPERTY STRINGS STUB ESP32)
+if(EDGE_NODE_BUILD)
+    set(MAIN_SOURCE source/main_edge_node.c)
+    if(NETWORK_TRANSPORT STREQUAL "ESP32")
+        set(NETWORK_TRANSPORT_SOURCE source/network/network_client_esp32.c source/network/protocol.h)
+    else()
+        set(NETWORK_TRANSPORT_SOURCE source/network/network_client_stub.c)
+    endif()
+    set(EDGE_NODE_SOURCE
+        source/rfid/rfid_rc522.c
+        source/rfid/rfid_rc522.h
+        source/actuator/actuator.c
+        source/actuator/actuator.h
+        source/state_machine/state_machine.c
+        source/state_machine/state_machine.h
+        source/network/network_client.h
+        ${NETWORK_TRANSPORT_SOURCE}
+        source/storage/card_store.c
+        source/storage/card_store.h
+    )
+    mcux_add_include(
+        INCLUDES source/rfid source/actuator source/state_machine source/network
+    )
+    # CTIMER driver (actuator.c's servo PWM) pulled directly, same reasoning
+    # as this file's other direct mcux_add_source() pulls (fsl_sdspi.c,
+    # ff.c below) - no Kconfig component needed for one self-contained
+    # driver file.
+    mcux_add_source(
+        BASE_PATH ${SdkRootDirPath}
+        SOURCES drivers/ctimer/fsl_ctimer.c
+                drivers/ctimer/fsl_ctimer.h
+    )
+    mcux_add_include(
+        BASE_PATH ${SdkRootDirPath}
+        INCLUDES drivers/ctimer
+    )
+else()
+    set(MAIN_SOURCE source/main.c)
+    set(EDGE_NODE_SOURCE "")
+endif()
+
 mcux_add_source(
     BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCES source/main.c
+    SOURCES ${MAIN_SOURCE}
+            ${EDGE_NODE_SOURCE}
             source/fault_handler.c
             source/spi1_bus.c
             source/spi1_bus.h
@@ -524,8 +580,14 @@ mcux_add_source(
             source/display/bbox_overlay.c
             source/display/bbox_overlay.h
             source/display/font5x7.h
+            source/display/font_sans.c
+            source/display/font_sans.h
             source/display/text_overlay.c
             source/display/text_overlay.h
+            source/display/ui_attendance.c
+            source/display/ui_attendance.h
+            source/display/wallpaper_240x320.c
+            source/display/wallpaper_240x320.h
             ${LCD_BACKEND_SOURCE}
             ${TOUCH_BACKEND_SOURCE}
             ${AI_MODEL_RUNNER_SOURCE}
@@ -783,7 +845,7 @@ if(LCD_ARDUINO_HEADER_BITBANG)
 endif()
 
 set_source_files_properties(
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/main.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/${MAIN_SOURCE}
     ${CMAKE_CURRENT_SOURCE_DIR}/source/spi1_bus.c
     ${CMAKE_CURRENT_SOURCE_DIR}/source/camera/camera_capture.c
     ${CMAKE_CURRENT_SOURCE_DIR}/source/display/bbox_overlay.c

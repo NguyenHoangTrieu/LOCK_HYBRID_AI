@@ -12,25 +12,47 @@
 #include <stdbool.h>
 #include <string.h>
 
-/* Widest string this project actually draws is 13 chars (e.g.
- * "CLOSED EYE: 1") at scale=3 -> 13 * (5+1)*3 = 234px. Rounded up with
- * margin; TEXT_DrawString() is only ever called with main.c's own fixed
- * status strings, not arbitrary/unbounded user input. */
-#define TEXT_MAX_LINE_PIXELS 256U
+/* Was "widest string this project actually draws is 13 chars... rounded
+ * up with margin" - that assumption was WRONG in practice: real hardware
+ * HardFaulted the first time main_edge_node.c's DEMO_UpdateStatusLine()
+ * called this with its 40-char padded status line at scale=2 (480px
+ * needed, only 256 available) - s_rowBuf's overrun corrupted whatever
+ * static object the linker happened to place after it, which surfaced
+ * as an unrelated-looking crash deep inside tflite::MicroInterpreter on
+ * the very next inference call. Root-caused via bisection (removing
+ * RFID/actuator/state-machine code one at a time changed nothing; the
+ * crash tracked exactly to the first real TEXT_DrawString() call this
+ * project has ever made on hardware - main.c's own would-be caller is
+ * `#if 0`'d out, so this path was never actually exercised before
+ * EDGE_NODE_BUILD). Fixed at the root (clamp in TEXT_DrawString() below)
+ * rather than by raising this number and hoping nothing calls it with
+ * something longer later - this buffer takes arbitrary caller strings
+ * now (state_machine.c's status text, up to 40 chars), not fixed,
+ * pre-known-length labels. */
+#define TEXT_MAX_LINE_PIXELS 320U
 
 static const font5x7_glyph_t *TEXT_FindGlyph(char c) {
-  for (uint32_t i = 0U; i < FONT5X7_GLYPH_COUNT; i++) {
-    if (FONT5X7[i].ch == c) {
-      return &FONT5X7[i];
-    }
+  if ((uint8_t)c >= 32U && (uint8_t)c <= 126U) {
+    return &FONT5X7[(uint8_t)c - 32U];
   }
-  return &FONT5X7[0]; /* space - fallback for any char outside this project's small glyph set */
+  return &FONT5X7[0]; /* space - fallback for any char outside printable ASCII */
 }
 
 void TEXT_DrawString(uint16_t x, uint16_t y, const char *str, uint16_t fgColor, uint16_t bgColor, uint8_t scale) {
   static uint16_t s_rowBuf[TEXT_MAX_LINE_PIXELS];
+  if (scale == 0U) {
+    scale = 1U; /* a 0 scale would make charCellW 0 below (div-by-zero in the clamp) and draws nothing meaningful anyway */
+  }
   uint32_t len = strlen(str);
   uint16_t charCellW = (uint16_t)((FONT5X7_WIDTH + 1U) * scale); /* +1 glyph column of background as inter-char gap */
+  /* Clamp to what s_rowBuf can actually hold - see TEXT_MAX_LINE_PIXELS's
+   * header comment. A too-long string is truncated (safe, just loses
+   * its tail on screen), never overflows the buffer regardless of what
+   * any caller passes. */
+  uint32_t maxChars = TEXT_MAX_LINE_PIXELS / charCellW;
+  if (len > maxChars) {
+    len = maxChars;
+  }
   uint16_t totalW = (uint16_t)(len * charCellW);
   uint16_t totalH = (uint16_t)(FONT5X7_HEIGHT * scale);
 

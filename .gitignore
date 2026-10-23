@@ -9,6 +9,12 @@ build_dualcore/
 **/build/
 **/build_dualcore/
 
+# ESP-IDF (esp32_net_bridge)
+**/managed_components/
+**/dependencies.lock
+**/sdkconfig
+**/sdkconfig.old
+
 # KiCad (PCB_DES) - generated/cache/lock files, not the design itself
 **/*-backups/
 **/_autosave-*
@@ -38,11 +44,14 @@ build_dualcore/
 .DS_Store
 Thumbs.db
 
-# Python (west/pyOCD tooling, future CLOUD_SERVER)
+# Python (west/pyOCD tooling, CLOUD_SERVER)
 __pycache__/
 *.pyc
 .venv/
 venv/
+
+# CLOUD_SERVER runtime data (SQLite DB) - not source, regenerated on first run
+CLOUD_SERVER/data/
 
 # Node (future CLOUD_SERVER web app)
 node_modules/
@@ -50,3 +59,4 @@ node_modules/
 # Secrets / local env
 .env
 .env.*
+CLOUD_SERVER/deploy/backend.env

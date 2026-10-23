@@ -44,8 +44,8 @@
  * size (the LCD only ever shows text status lines now, not the live
  * camera image - see main.c).
  ******************************************************************************/
-#define DEMO_PANEL_WIDTH  320U
-#define DEMO_PANEL_HEIGHT 240U
+#define DEMO_PANEL_WIDTH  240U
+#define DEMO_PANEL_HEIGHT 320U
 
 /*******************************************************************************
  * J8 FlexIO/LCD header - 8-bit parallel MIPI-DBI/8080 bus (panel only has

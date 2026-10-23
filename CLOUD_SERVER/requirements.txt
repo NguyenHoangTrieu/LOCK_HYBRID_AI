@@ -1,0 +1,20 @@
+fastapi==0.156.8
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+numpy==2.5.4
+python-multipart==0.0.32
+Pillow==13.0.0
+
+# Real face recognition (app/recognition.py's InsightFaceEmbedder) - see
+# CLOUD_SERVER/README.md's "Recognition model" section. Server still runs
+# without these (falls back to the placeholder embedder with a logged
+# warning), but AR-1/AR-2 cannot be met without them.
+insightface==2.1
+opencv-python==5.0.0.93
+
+# Must be installed AFTER insightface (which pulls in a CPU-only
+# `onnxruntime` as its own dependency) so this overwrites that install -
+# both packages ship the same `onnxruntime` import path, and whichever
+# installs last wins. onnxruntime-gpu includes CPUExecutionProvider too,
+# so this is a strict superset, never a downgrade.
+onnxruntime-gpu==1.31.0

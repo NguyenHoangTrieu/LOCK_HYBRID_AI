@@ -268,8 +268,14 @@ void BOARD_InitSdCardPins(void)
 {
     CLOCK_EnableClock(kCLOCK_Port0);
 
-    PORT_SetPinMux(PORT0, 24U, kPORT_MuxAlt2); /* P0_24 = FC1_P0 = LPSPI1 SDO (D11/SPI_MOSI) */
-    PORT_SetPinMux(PORT0, 25U, kPORT_MuxAlt2); /* P0_25 = FC1_P1 = LPSPI1 SCK (D13/SPI_SCK) */
+    const port_pin_config_t spiOutConfig = {
+        .slewRate     = kPORT_SlowSlewRate,
+        .driveStrength= kPORT_LowDriveStrength,
+        .mux          = kPORT_MuxAlt2,
+        .lockRegister = kPORT_UnlockRegister,
+    };
+    PORT_SetPinConfig(PORT0, 24U, &spiOutConfig); /* P0_24 = FC1_P0 = LPSPI1 SDO (D11/SPI_MOSI) */
+    PORT_SetPinConfig(PORT0, 25U, &spiOutConfig); /* P0_25 = FC1_P1 = LPSPI1 SCK (D13/SPI_SCK) */
 
     /* P0_26 = FC1_P2 = LPSPI1 SDI (D12/SPI_MISO) - required pull-up */
     const port_pin_config_t sdiPullUpConfig = {
@@ -314,8 +320,17 @@ void BOARD_InitBaseboardPeripheralPins(void)
     PORT_SetPinConfig(DEMO_RFID_IRQ_PORT, DEMO_RFID_IRQ_PIN, &pullUpInputConfig);
     GPIO_PinInit(DEMO_RFID_IRQ_GPIO, DEMO_RFID_IRQ_PIN, &inputConfig);
 
-    /* ESP32: CS (P0_23 / A5) idle high so it doesn't assert SPI while inactive */
-    PORT_SetPinMux(DEMO_ESP32_CS_PORT, DEMO_ESP32_CS_PIN, kPORT_MuxAlt0);
+    /* ESP32: CS (P0_23 / A5) idle high so it doesn't assert SPI while inactive.
+     * Use High Drive Strength and Fast Slew Rate to drive past any debounce capacitance on P0_23 (SW2). */
+    const port_pin_config_t esp32CsPortConfig = {
+        .pullSelect   = kPORT_PullUp,
+        .slewRate     = kPORT_FastSlewRate,
+        .driveStrength= kPORT_HighDriveStrength,
+        .mux          = kPORT_MuxAlt0,
+        .inputBuffer  = kPORT_InputBufferDisable,
+        .lockRegister = kPORT_UnlockRegister,
+    };
+    PORT_SetPinConfig(DEMO_ESP32_CS_PORT, DEMO_ESP32_CS_PIN, &esp32CsPortConfig);
     GPIO_PinInit(DEMO_ESP32_CS_GPIO, DEMO_ESP32_CS_PIN, &idleHighConfig);
 
     /* INA228: ALRT (P0_29 / D2) input pullup */

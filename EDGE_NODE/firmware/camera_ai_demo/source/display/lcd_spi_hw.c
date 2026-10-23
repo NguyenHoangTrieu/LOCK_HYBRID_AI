@@ -131,11 +131,9 @@ static void LCD_InitPanel(void) {
   LCD_WriteCommand(0x11U); /* Sleep out */
   SDK_DelayAtLeastUs(150000, SystemCoreClock);
 
-  /* MADCTL: MV=1 (row/column exchange) matches this panel's native
-   * 240x320 GRAM to the camera's 320x240 landscape buffer. BGR=0 (0x20) -
-   * confirmed on real hardware that BGR=1 (correct on the earlier
-   * parallel panel) gives a blue/cyan cast on this SPI panel. */
-  LCD_WriteCommandData(0x36U, (const uint8_t[]){0x20U}, 1U);
+  /* MADCTL: MV=0 (portrait 240x320 native GRAM), MX=1 (un-mirrored column order), MY=1 (rotated 180 deg).
+   * BGR=0 (RGB color order). Matches physical upright orientation on FRDM-MCXN947. */
+  LCD_WriteCommandData(0x36U, (const uint8_t[]){0xC0U}, 1U);
 
   LCD_WriteCommandData(0x3AU, (const uint8_t[]){0x55U},
                        1U); /* Pixel format: 16bpp RGB565 */

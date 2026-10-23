@@ -1,0 +1,19 @@
+[Unit]
+Description=LOCK_HYBRID_AI Cloud Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/embedded/LOCK_HYBRID_AI/CLOUD_SERVER
+ExecStart=%h/embedded/LOCK_HYBRID_AI/CLOUD_SERVER/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+# Optional: point LOCK_HYBRID_ADMIN_PASSWORD / LOCK_HYBRID_DB_PATH at a
+# real value instead of the random-generated-on-first-boot default -
+# create this file yourself (not committed, keep it out of git) and
+# uncomment the line below.
+# EnvironmentFile=%h/embedded/LOCK_HYBRID_AI/CLOUD_SERVER/deploy/backend.env
+
+[Install]
+WantedBy=default.target

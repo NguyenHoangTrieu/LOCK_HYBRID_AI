@@ -28,8 +28,8 @@
  * driven here in landscape via MADCTL (MV bit, see lcd_spi_hw.c's
  * LCD_InitPanel).
  ******************************************************************************/
-#define DEMO_PANEL_WIDTH  320U
-#define DEMO_PANEL_HEIGHT 240U
+#define DEMO_PANEL_WIDTH  240U
+#define DEMO_PANEL_HEIGHT 320U
 
 /*******************************************************************************
  * Arduino header - baseboard PCB schematic (LOCK_EDGE_BASEBOARD):
