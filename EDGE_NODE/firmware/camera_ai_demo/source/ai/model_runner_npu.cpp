@@ -33,7 +33,7 @@
 #define NPU_MODEL_INPUT_WIDTH 128U
 #define NPU_MODEL_INPUT_HEIGHT 128U
 #define NPU_MODEL_NUM_PRIORS 172U
-#define NPU_MODEL_DETECTION_THRESHOLD 0.80f
+#define NPU_MODEL_DETECTION_THRESHOLD 0.75f
 #define NPU_MODEL_NMS_THRESHOLD 0.45f
 
 constexpr int kTensorArenaSize = 244 * 1024;
@@ -309,45 +309,23 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width,
   static uint32_t s_infFrameCount = 0;
   s_infFrameCount++;
 
-  /* Dynamic fast rotation scheduler:
-   * Primary physical orientation on J9 is rot=3 (270 deg CW).
-   * Runs 1 NPU pass (16ms) per frame normally; probes an alternative
-   * rotation once every 32 idle frames so idle FPS stays high (~16-18 FPS). */
-  static int s_activeRot = 3; /* 270 deg default */
-  static int s_altStep = 0;
-  const int allRots[4] = {3, 0, 2, 1};
+  /* Fixed physical camera orientation on J9 is rot=3 (270 deg CW).
+   * Runs 1 NPU pass (16ms) directly in the physical orientation every frame.
+   * Eliminates dynamic rotation hijacking that previously caused AI detection
+   * to freeze after detecting false positive background clutter in other angles. */
+  const int rot = 3;
+  SampleCropTensor(pixels, width, height, rot, inputData, &midPx, &midR,
+                   &midG, &midB);
 
-  int rotsToTry[2];
-  int numRotsToTry = 1;
-  rotsToTry[0] = s_activeRot;
+  uint32_t cycStart = DWT->CYCCNT;
+  TfLiteStatus invokeStatus = s_interpreter->Invoke();
+  uint32_t elapsedCycles = DWT->CYCCNT - cycStart;
+  totalElapsedUs =
+      (uint32_t)(((uint64_t)elapsedCycles * 1000000ULL) / SystemCoreClock);
 
-  /* Probe an alternative rotation occasionally when idle */
-  static bool s_lastHadFace = false;
-  if (!s_lastHadFace && ((s_infFrameCount & 31U) == 0U)) {
-    s_altStep = (s_altStep + 1) % 4;
-    if (allRots[s_altStep] != s_activeRot) {
-      rotsToTry[1] = allRots[s_altStep];
-      numRotsToTry = 2;
-    }
+  if (invokeStatus != kTfLiteOk) {
+    return;
   }
-
-  int bestRot = s_activeRot;
-  float globalMaxScore = -1.0f;
-  int globalMaxAnchor = -1;
-
-  for (int rIdx = 0; rIdx < numRotsToTry; rIdx++) {
-    int rot = rotsToTry[rIdx];
-    SampleCropTensor(pixels, width, height, rot, inputData, &midPx, &midR,
-                     &midG, &midB);
-
-    uint32_t cycStart = DWT->CYCCNT;
-    TfLiteStatus invokeStatus = s_interpreter->Invoke();
-    uint32_t elapsedCycles = DWT->CYCCNT - cycStart;
-    totalElapsedUs +=
-        (uint32_t)(((uint64_t)elapsedCycles * 1000000ULL) / SystemCoreClock);
-
-    if (invokeStatus != kTfLiteOk)
-      continue;
 
     TfLiteTensor *outputTensor = s_interpreter->output(0);
     const int8_t *outputData = outputTensor->data.int8;
@@ -413,44 +391,13 @@ extern "C" void AI_MODEL_RunInference(const uint16_t *pixels, uint16_t width,
           }
         }
       }
-    }
-
-    if (rotMaxScore > globalMaxScore) {
-      globalMaxScore = rotMaxScore;
-      globalMaxAnchor = rotMaxAnchor;
-      bestRot = rot;
-    }
-
-    /* If this rotation detected a valid face, lock onto it and break! */
-    if (s_candidateCount > 0) {
-      s_activeRot = rot;
-      bestRot = rot;
-      break;
-    }
   }
 
-  s_lastHadFace = (s_candidateCount > 0);
-
-  if ((s_infFrameCount % 16U) == 0U) {
-    int deg = 0;
-    switch (bestRot) {
-    case 1:
-      deg = 90;
-      break;
-    case 2:
-      deg = 180;
-      break;
-    case 3:
-      deg = 270;
-      break;
-    default:
-      deg = 0;
-      break;
-    }
-    PRINTF("AI NPU: %ums | Top score: %d%% (threshold %d%%, rot=%d deg, a=%d) "
+  if (rotMaxScore >= 0.40f) {
+    PRINTF("AI NPU: %ums | Top score: %d%% (threshold %d%%, a=%d) "
            "| MidPx: 0x%04X R=%u G=%u B=%u\r\n",
-           (unsigned)(totalElapsedUs / 1000U), (int)(globalMaxScore * 100.0f),
-           (int)(NPU_MODEL_DETECTION_THRESHOLD * 100.0f), deg, globalMaxAnchor,
+           (unsigned)(totalElapsedUs / 1000U), (int)(rotMaxScore * 100.0f),
+           (int)(NPU_MODEL_DETECTION_THRESHOLD * 100.0f), rotMaxAnchor,
            midPx, (unsigned)midR, (unsigned)midG, (unsigned)midB);
   }
 

@@ -70,6 +70,96 @@ static void WaitForTriggerRelease(void)
     }
 }
 
+/* CameraWarmup() (skip-first-N-frames after init) was tried and reverted
+ * here - a fresh photo from real hardware showed a DIFFERENT artifact
+ * (regular vertical streaking with the underlying scene still visible,
+ * not random colored noise) that didn't clear with warm-up and persisted
+ * during steady-state running, not just right after reset. That pattern
+ * points to the camera's parallel DVP bus (PCLK/HREF/VSYNC/D0-D7 on J9)
+ * having a signal-integrity/wiring issue, not a software timing bug -
+ * user call: accept this as a hardware limitation for now rather than
+ * keep chasing it in firmware. */
+
+/* Objective sensor-color readout, independent of the LCD panel's own
+ * color response and whatever a phone camera's auto white balance does
+ * when photographing that LCD - both of those distort what a photo shows
+ * regardless of what the sensor is actually outputting. Sparse sample,
+ * same stride/decode as model_runner_npu.cpp's diagnostic MidPx print. */
+/* Same class of bug ARCHITECTURE.md documents for SD snapshots and that
+ * main_core1.c's dual-core build already works around: SmartDMA keeps
+ * writing the frame buffer right up until CAMERA_CAPTURE_Deinit() stops
+ * it, so a read immediately after Deinit() can catch the buffer mid-write
+ * - some rows old, some new, no error reported. The AI NPU log's MidPx
+ * jumping wildly frame to frame even with a stationary scene/camera
+ * (e.g. R=230 G=202 B=8 one frame, R=16 G=52 B=32 the next) is consistent
+ * with this - a torn frame feeds the NPU inconsistent/nonsense pixels,
+ * which would explain detection being unreliable independent of exposure
+ * or threshold tuning. This single-core build (main_edge_node.c) never
+ * had this check; dual-core's main_core1.c has had it since the SD-card
+ * investigation. Cheap sparse-sample hash, same stride as
+ * DEMO_LogFrameSignature()-style checks elsewhere in this project. */
+#define FRAME_SETTLE_DELAY_MS  2U
+#define FRAME_SETTLE_MAX_TRIES 5U
+
+static uint32_t QuickBufferSignature(const uint16_t *frame)
+{
+    const uint32_t pixelCount = (uint32_t)DEMO_BUFFER_WIDTH * DEMO_BUFFER_HEIGHT;
+    const uint32_t stride     = 97U;
+    uint32_t sig              = 0U;
+
+    for (uint32_t i = 0U; i < pixelCount; i += stride)
+    {
+        sig = (sig * 31U) + frame[i];
+    }
+    return sig;
+}
+
+static void WaitForFrameSettle(const uint16_t *frame)
+{
+    uint32_t settleSig = QuickBufferSignature(frame);
+    for (uint32_t tryIdx = 0U; tryIdx < FRAME_SETTLE_MAX_TRIES; tryIdx++)
+    {
+        SDK_DelayAtLeastUs(FRAME_SETTLE_DELAY_MS * 1000U, SystemCoreClock);
+        uint32_t settleSig2 = QuickBufferSignature(frame);
+        if (settleSig2 == settleSig)
+        {
+            return;
+        }
+        settleSig = settleSig2;
+    }
+}
+
+static void LogCameraColorStats(const uint16_t *frame)
+{
+    const uint32_t pixelCount = (uint32_t)DEMO_BUFFER_WIDTH * DEMO_BUFFER_HEIGHT;
+    const uint32_t stride     = 97U;
+    uint32_t sumR = 0U, sumG = 0U, sumB = 0U, samples = 0U;
+    uint8_t minR = 255U, minG = 255U, minB = 255U;
+    uint8_t maxR = 0U, maxG = 0U, maxB = 0U;
+
+    for (uint32_t i = 0U; i < pixelCount; i += stride)
+    {
+        uint16_t px = frame[i];
+        uint8_t r = (uint8_t)(((px >> 11U) & 0x1FU) * 255U / 31U);
+        uint8_t g = (uint8_t)(((px >> 5U) & 0x3FU) * 255U / 63U);
+        uint8_t b = (uint8_t)((px & 0x1FU) * 255U / 31U);
+        sumR += r;
+        sumG += g;
+        sumB += b;
+        if (r < minR) { minR = r; }
+        if (r > maxR) { maxR = r; }
+        if (g < minG) { minG = g; }
+        if (g > maxG) { maxG = g; }
+        if (b < minB) { minB = b; }
+        if (b > maxB) { maxB = b; }
+        samples++;
+    }
+
+    PRINTF("Camera color: avg R=%u G=%u B=%u | range R[%u..%u] G[%u..%u] B[%u..%u] (%u samples)\r\n",
+           (unsigned)(sumR / samples), (unsigned)(sumG / samples), (unsigned)(sumB / samples),
+           minR, maxR, minG, maxG, minB, maxB, (unsigned)samples);
+}
+
 static void RunCameraPreviewMode(void)
 {
     PRINTF("\r\n=======================================================\r\n");
@@ -89,6 +179,7 @@ static void RunCameraPreviewMode(void)
     bool skipNextFrame           = false;
     uint32_t switchPressStartCycle = 0;
     bool switching               = false;
+    uint32_t frameCounter        = 0U;
 
     while (1)
     {
@@ -127,7 +218,14 @@ static void RunCameraPreviewMode(void)
 
         uint16_t *frame = CAMERA_CAPTURE_GetFrameBuffer();
 
+        frameCounter++;
+        if ((frameCounter % 30U) == 0U)
+        {
+            LogCameraColorStats(frame);
+        }
+
         CAMERA_CAPTURE_Deinit();
+        WaitForFrameSettle(frame);
         LCD_DrawImage(0U, 0U, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, frame);
         CAMERA_CAPTURE_Reinit();
         skipNextFrame = true;
@@ -204,6 +302,7 @@ static void RunSmartLockMode(void)
         uint16_t *frame = CAMERA_CAPTURE_GetFrameBuffer();
 
         CAMERA_CAPTURE_Deinit();
+        WaitForFrameSettle(frame);
 
         ai_model_result_t aiResult;
         AI_MODEL_RunInference(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, &aiResult);

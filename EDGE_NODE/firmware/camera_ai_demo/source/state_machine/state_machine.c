@@ -11,10 +11,8 @@
 #include <stdio.h>
 #include <string.h>
 
-/* FR-2: a face must be present for this many consecutive frames before an
- * identification attempt starts - the "3 frames" ARCHITECTURE.md Sec.4.2
- * calls out, not just a single lucky detection on someone passing by. */
-#define STATE_MACHINE_FACE_STABLE_FRAMES 3U
+/* FR-2: face presence stability threshold (2 consecutive frames with hysteresis). */
+#define STATE_MACHINE_FACE_STABLE_FRAMES 2U
 
 /* FR-16: how long the latch stays unlocked on a grant (snappy 1.5s - 2.0s). */
 #define STATE_MACHINE_UNLOCK_HOLD_MS 1500U
@@ -447,12 +445,19 @@ void STATE_MACHINE_Poll(const uint16_t *frame, const ai_model_result_t *aiResult
         return;
     }
 
-    /* FR-2 stability counter - tracked only when an actual camera frame inference occurred (aiResult != NULL).
-     * Idle polls without a frame (aiResult == NULL) must NOT reset the counter. */
+    /* FR-2 stability counter with hysteresis - tracked only when an actual camera frame inference occurred.
+     * Decrements on temporary frame misses rather than hard-resetting to 0, preventing blink glitches. */
     if (aiResult != NULL)
     {
         bool faceDetected = aiResult->valid && (aiResult->boxCount > 0U);
-        s_faceStableCount = faceDetected ? (s_faceStableCount + 1U) : 0U;
+        if (faceDetected)
+        {
+            s_faceStableCount++;
+        }
+        else if (s_faceStableCount > 0U)
+        {
+            s_faceStableCount--;
+        }
     }
 
     bool atRest = (s_state == DEVICE_STATE_IDLE) || (s_state == DEVICE_STATE_OFFLINE) ||

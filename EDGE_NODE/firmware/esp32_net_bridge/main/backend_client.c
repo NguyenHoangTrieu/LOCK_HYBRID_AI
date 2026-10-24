@@ -13,11 +13,24 @@
 #include "cJSON.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 #include "sdkconfig.h"
 #include <stdio.h>
 #include <string.h>
 
 static const char *TAG = "backend_client";
+
+/* Same NVS namespace wifi_captive_portal.c writes "backend_url"/
+ * "backend_key" into (the setup form's optional fields) - overrides the
+ * compiled-in Kconfig defaults below without a rebuild/reflash, so the
+ * server address survives moving this device to a different network/
+ * server without needing `idf.py menuconfig` + reflash each time. */
+#define WIFI_PROV_NVS_NAMESPACE "wifi_cfg"
+#define BACKEND_NVS_URL_KEY  "backend_url"
+#define BACKEND_NVS_KEY_KEY  "backend_key"
+
+static char s_baseUrl[96]  = CONFIG_LOCK_HYBRID_BACKEND_BASE_URL;
+static char s_deviceKey[80] = CONFIG_LOCK_HYBRID_DEVICE_API_KEY;
 
 #define RESPONSE_BUF_SIZE 1024U
 static char s_responseBuf[RESPONSE_BUF_SIZE];
@@ -42,7 +55,7 @@ static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)
 static esp_http_client_handle_t OpenClient(const char *path, esp_http_client_method_t method)
 {
     char url[256];
-    (void)snprintf(url, sizeof(url), "%s%s", CONFIG_LOCK_HYBRID_BACKEND_BASE_URL, path);
+    (void)snprintf(url, sizeof(url), "%s%s", s_baseUrl, path);
 
     /* CONFIG_LOCK_HYBRID_BACKEND_SKIP_TLS_VERIFY is a bool Kconfig option -
      * kconfgen only emits the macro at all when it's set to 'y', so this
@@ -62,13 +75,28 @@ static esp_http_client_handle_t OpenClient(const char *path, esp_http_client_met
         .skip_cert_common_name_check = skipTlsVerify,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_http_client_set_header(client, "X-Device-Key", CONFIG_LOCK_HYBRID_DEVICE_API_KEY);
+    esp_http_client_set_header(client, "X-Device-Key", s_deviceKey);
     return client;
 }
 
 void BACKEND_Init(void)
 {
-    ESP_LOGI(TAG, "backend base URL: %s", CONFIG_LOCK_HYBRID_BACKEND_BASE_URL);
+    nvs_handle_t nvsHandle;
+    if (nvs_open(WIFI_PROV_NVS_NAMESPACE, NVS_READONLY, &nvsHandle) == ESP_OK)
+    {
+        size_t len = sizeof(s_baseUrl);
+        if (nvs_get_str(nvsHandle, BACKEND_NVS_URL_KEY, s_baseUrl, &len) != ESP_OK)
+        {
+            (void)strlcpy(s_baseUrl, CONFIG_LOCK_HYBRID_BACKEND_BASE_URL, sizeof(s_baseUrl));
+        }
+        len = sizeof(s_deviceKey);
+        if (nvs_get_str(nvsHandle, BACKEND_NVS_KEY_KEY, s_deviceKey, &len) != ESP_OK)
+        {
+            (void)strlcpy(s_deviceKey, CONFIG_LOCK_HYBRID_DEVICE_API_KEY, sizeof(s_deviceKey));
+        }
+        nvs_close(nvsHandle);
+    }
+    ESP_LOGI(TAG, "backend base URL: %s", s_baseUrl);
 }
 
 static void UidToHex(const uint8_t *uid, uint8_t uidLen, char *out, size_t outSize)

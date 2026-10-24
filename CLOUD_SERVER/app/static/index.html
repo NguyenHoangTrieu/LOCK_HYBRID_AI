@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>LOCK_HYBRID_AI Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionLock AI &mdash; Hệ thống Kiểm soát Ra/Vào &amp; Điểm danh Thông minh</title>
 <style>
-  body { font-family: system-ui, sans-serif; margin: 0; background: #f4f5f7; color: #1a1a1a; }
-  header { background: #1a2740; color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
-  nav { display: flex; gap: 4px; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+  header { background: #0f172a; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  nav { display: flex; gap: 6px; padding: 8px 24px; background: #ffffff; border-bottom: 1px solid #e2e8f0; }
   nav button { background: none; border: none; padding: 8px 14px; cursor: pointer; border-radius: 6px; font-size: 14px; }
   nav button.active { background: #1a2740; color: #fff; }
   main { padding: 20px; max-width: 1400px; margin: 0 auto; }
@@ -73,27 +74,36 @@
 </head>
 <body>
 
-<div id="login-box">
-  <h2>LOCK_HYBRID_AI Admin</h2>
-  <input id="login-user" placeholder="Username" value="admin" onkeydown="if(event.key==='Enter')login()">
-  <input id="login-pass" placeholder="Password" type="password" onkeydown="if(event.key==='Enter')login()">
-  <button class="btn" onclick="login()">Sign in</button>
+<div id="login-box" style="text-align:center;">
+  <div style="font-size:38px;margin-bottom:6px;">🛡️</div>
+  <h2 style="margin:0 0 4px 0;font-size:20px;font-weight:700;color:#0f172a;">VisionLock AI</h2>
+  <p class="muted" style="margin:0 0 16px 0;font-size:12.5px;">Hệ thống Kiểm soát Ra/Vào &amp; Điểm danh Thông minh</p>
+  <input id="login-user" placeholder="Tên đăng nhập" value="admin" onkeydown="if(event.key==='Enter')login()">
+  <input id="login-pass" placeholder="Mật khẩu" type="password" onkeydown="if(event.key==='Enter')login()">
+  <button class="btn" style="width:100%;margin-top:6px;padding:8px;" onclick="login()">Đăng nhập Hệ thống</button>
   <p class="err" id="login-err"></p>
-  <p class="muted">Default bootstrap password: <code>wdCHNRRgvT8USXIs</code></p>
 </div>
 
 <div id="app" style="display:none">
   <header>
-    <h1>LOCK_HYBRID_AI &mdash; Admin</h1>
-    <button class="btn secondary" onclick="logout()">Sign out</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;">🛡️</span>
+      <div>
+        <h1 style="font-size:16px;margin:0;font-weight:700;letter-spacing:0.3px;">VisionLock AI <span style="font-weight:400;opacity:0.8;font-size:13px;">&mdash; Intelligent Access &amp; Attendance Platform</span></h1>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:12.5px;opacity:0.9;">👤 Quản trị viên (Admin)</span>
+      <button class="btn secondary" style="padding:4px 10px;font-size:12px;" onclick="logout()">Đăng xuất</button>
+    </div>
   </header>
   <nav>
-    <button data-tab="inout" onclick="showTab('inout')">Giám sát Vào/Ra</button>
-    <button data-tab="users" onclick="showTab('users')" class="active">Users</button>
-    <button data-tab="devices" onclick="showTab('devices')">Devices</button>
-    <button data-tab="cards" onclick="showTab('cards')">Cards</button>
-    <button data-tab="attendance" onclick="showTab('attendance')">Attendance Logs</button>
-    <button data-tab="config" onclick="showTab('config')">Config</button>
+    <button data-tab="inout" onclick="showTab('inout')">📊 Giám sát Vào/Ra</button>
+    <button data-tab="users" onclick="showTab('users')" class="active">👥 Quản lý Nhân sự &amp; Thẻ</button>
+    <button data-tab="devices" onclick="showTab('devices')">📱 Thiết bị Đầu cuối (Edge Nodes)</button>
+    <button data-tab="cards" onclick="showTab('cards')">💳 Kho Thẻ RFID</button>
+    <button data-tab="attendance" onclick="showTab('attendance')">📋 Nhật ký Điểm danh</button>
+    <button data-tab="config" onclick="showTab('config')">⚙️ Cấu hình Hệ thống</button>
   </nav>
   <main>
     <section id="tab-inout">
@@ -283,7 +293,7 @@ function login() {
     document.getElementById('login-box').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     refreshAll();
-  }).catch(() => { document.getElementById('login-err').textContent = 'Invalid credentials'; });
+  }).catch(() => { document.getElementById('login-err').textContent = 'Tài khoản hoặc mật khẩu không chính xác'; });
 }
 
 function logout() {
@@ -310,8 +320,10 @@ function showTab(name) {
 }
 
 let usersCache = [];
+let avatarCacheBust = Date.now();
 
 async function refreshAll() {
+  avatarCacheBust = Date.now();
   initInOutDates();
   await loadInOut();
   await loadUsers();
@@ -329,7 +341,7 @@ function loadUsers() {
     const body = document.querySelector('#users-table tbody');
     body.innerHTML = users.map(u => `
       <tr>
-        <td style="text-align:center;"><img src="/admin/api/users/${u.id}/avatar" class="avatar-circle" style="width:34px;height:34px;" alt="${u.name}"></td>
+        <td style="text-align:center;"><img src="/admin/api/users/${u.id}/avatar?t=${avatarCacheBust}" class="avatar-circle" style="width:34px;height:34px;" alt="${u.name}"></td>
         <td><b>${u.name}</b></td>
         <td>${u.org_id || '<span class="muted">--</span>'}</td>
         <td><span class="pill ${u.active ? 'active' : 'inactive'}">${u.active ? 'active' : 'inactive'}</span></td>
@@ -380,6 +392,7 @@ async function createUser() {
       const form = new FormData();
       form.append('avatar', photoInput.files[0]);
       await api(`/admin/api/users/${newUserId}/avatar`, { method: 'POST', body: form });
+      avatarCacheBust = Date.now();
     }
 
     nameInput.value = '';
@@ -477,6 +490,7 @@ async function saveUserEdit() {
       const form = new FormData();
       form.append('avatar', selectedAvatarFile);
       const res = await api(`/admin/api/users/${id}/avatar`, { method: 'POST', body: form });
+      avatarCacheBust = Date.now();
       if (res && res.face_enrolled) {
         if (statusMsg) statusMsg.textContent = '✓ Đã cập nhật ảnh và kích hoạt nhận diện khuôn mặt!';
       }
@@ -735,7 +749,7 @@ function renderInOutTable() {
     return `
       <tr>
         <td class="col-avatar">
-          <img src="${u.avatar_url}" class="avatar-circle" alt="${u.name}">
+          <img src="${u.avatar_url}?t=${avatarCacheBust}" class="avatar-circle" alt="${u.name}">
         </td>
         <td class="col-name">
           <div style="font-weight:600;font-size:14px;color:#0f172a;">${u.name}</div>

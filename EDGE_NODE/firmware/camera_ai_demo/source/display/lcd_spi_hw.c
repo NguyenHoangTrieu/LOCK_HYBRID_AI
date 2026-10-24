@@ -26,9 +26,16 @@
 /* One 320x240 RGB565 frame is 153,600 bytes = 1,228,800 bits - at 37.5MHz
  * (PLL0 150MHz / 2 = 75MHz source clock, / 2 LPSPI divider) that's a
  * ~32.8ms wire-time floor (~30fps best case). If the image comes back
- * glitchy/torn on long jumper wires, lower this toward 24MHz. */
+ * glitchy/torn on long jumper wires, lower this toward 24MHz.
+ * Dropped to 24MHz: user reported the LCD occasionally showing full-
+ * screen colored snow/noise, clearing after a reset - exactly the
+ * symptom this comment already predicted, and the board's own jumper
+ * wiring (visible in photos from this session) matches "long jumper
+ * wires". Lower SPI clock trades a bit of frame rate for signal-
+ * integrity margin; cheaper to try first than any software race-
+ * condition fix. */
 #ifndef LCD_SPI_BAUDRATE_HZ
-#define LCD_SPI_BAUDRATE_HZ 37500000U
+#define LCD_SPI_BAUDRATE_HZ 24000000U
 #endif
 
 static void LCD_SetCSPin(bool set) {

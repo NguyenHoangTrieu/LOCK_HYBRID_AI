@@ -1,9 +1,12 @@
 /*
  * backend_client.h - HTTP(S) client talking to the Cloud Backend
  * (CLOUD_SERVER/, see its README for the exact routes/schemas this
- * mirrors). Base URL and device API key are set via `idf.py menuconfig`
- * (Kconfig.projbuild) - each flashed device gets its own key, issued by
- * POST /admin/api/devices in the admin web app.
+ * mirrors). Base URL and device API key default to the Kconfig.projbuild
+ * values (`idf.py menuconfig`), but are overridden at runtime if the
+ * WiFi setup captive portal's optional "Backend Server URL"/"Device API
+ * Key" fields were filled in (wifi_captive_portal.c writes those to NVS;
+ * BACKEND_Init() reads them back) - lets the server address move without
+ * a rebuild/reflash, same as the WiFi credentials themselves.
  */
 #ifndef _BACKEND_CLIENT_H_
 #define _BACKEND_CLIENT_H_

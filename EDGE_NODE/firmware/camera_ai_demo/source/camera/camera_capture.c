@@ -29,6 +29,9 @@
 #define OV7670_MVFP_FLIP_MASK 0x10U   /* vertical flip (top/bottom) */
 
 #ifndef DEMO_CAMERA_MIRROR
+/* Tried forcing this to 1 (to match the sensor's own OV7670_CameraInit()
+ * mirror-on default) after a report of a left-right-mirrored preview -
+ * confirmed WRONG on real hardware, reverted back to 0. */
 #define DEMO_CAMERA_MIRROR 0U
 #endif
 #ifndef DEMO_CAMERA_VFLIP
@@ -109,26 +112,22 @@ static void CAMERA_CAPTURE_InitDevice(void) {
          "%u fps.\r\n",
          DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, camConfig.framePerSec);
 
-  /* Default light mode (OV7670_LIGHT_MODE_DISABLED) under-compensates for
-   * indoor artificial light (R>>B even with AWB enabled) - HOME is the
-   * vendor preset for indoor/incandescent light. Try OFFICE if this still
-   * isn't enough for your lighting. */
+  /* Reverted to match the v1 branch's camera config exactly (plain HOME,
+   * no extra COM9 gain-ceiling raise, no Night Mode, no manual AEW/AEB/
+   * brightness override). Confirmed on real hardware this session:
+   *  - v1's plain HOME: local NPU scored 58-76%, repeatedly triggered
+   *    FACE DETECTED - the best result seen across every variant tried.
+   *  - Every boosted variant tried on main (HOME+boost, OFFICE+boost,
+   *    SUNNY+full boost, SUNNY+reduced boost) scored worse, down to
+   *    flat-white ~10% at the most aggressive end (MidPx stuck at
+   *    0xF7BE, R=G=B=~246).
+   * The color-preset detour (OFFICE/SUNNY) turned out to be a red
+   * herring - v1's unmodified HOME outperformed all of it. User call:
+   * keep this exact config, do not add a separate cloud-only brightness
+   * step - the v1-vs-main brightness tradeoff (dim enough to miss on
+   * the cloud model vs bright enough to miss locally) stands as a
+   * separate, open problem. */
   (void)OV7670_LightMode(&s_cameraHandle, &OV7670_LIGHT_MODE_HOME);
-
-  /* Boost exposure and gain for low-light indoor environments:
-   * 1. Raise AGC gain ceiling in COM9 from 4x (preset default) to 64x
-   *    so sensor can amplify in dark rooms.
-   * 2. Enable Auto Night Mode: doubles exposure time when dark.
-   * 3. Boost digital brightness offset (+32).
-   * 4. Raise AEC target luminance window (AEW=0x90, AEB=0x70) so AEC aims higher. */
-  (void)SCCB_ModifyReg(
-      OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_COM9_REG,
-      0x70U, 0x50U, /* bits [6:4] = 101b -> 64x gain ceiling */
-      s_cameraResource.i2cReceiveFunc, s_cameraResource.i2cSendFunc);
-  (void)OV7670_NightMode(&s_cameraHandle, &OV7670_NIGHT_MODE_AUTO_FR_DIVBY2);
-  (void)OV7670_BrightnessAdjustment(&s_cameraHandle, 0x20U);
-  (void)SCCB_WriteReg(OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_AEW_REG, 0x90U, s_cameraResource.i2cSendFunc);
-  (void)SCCB_WriteReg(OV7670_SCCB_I2C_ADDR, kSCCB_RegAddr8Bit, OV7670_AEB_REG, 0x70U, s_cameraResource.i2cSendFunc);
 
   /* Set mirror/vflip explicitly, after OV7670_LightMode() so it's the
    * last word on MVFP - overrides the hidden mirror-on default above. */
@@ -176,6 +175,16 @@ void CAMERA_CAPTURE_Deinit(void) {
 }
 
 void CAMERA_CAPTURE_Reinit(void) {
+  /* Tried re-adding SMARTDMA_InstallFirmware() here (theory: InitWithout
+   * Firmware()'s "Clear Smart DMA RAM" doc comment meant the firmware
+   * copy at 0x04000000 was getting wiped every Reinit(), so SMARTDMA_Boot
+   * was jumping into garbage) - confirmed WRONG on real hardware, the
+   * colored-noise glitch got MORE frequent with the re-install added
+   * (doing a firmware memcpy + reset every single frame, ~30x/sec,
+   * likely racing something else on this frame cycle worse than the
+   * original code did). Reverted back to the original Init-once /
+   * Reinit-without-reinstalling behavior. Root cause of the intermittent
+   * noise is still open. */
   SMARTDMA_InitWithoutFirmware();
   SMARTDMA_InstallCallback(CAMERA_CAPTURE_CompleteCallback, NULL);
   NVIC_EnableIRQ(SMARTDMA_IRQn);

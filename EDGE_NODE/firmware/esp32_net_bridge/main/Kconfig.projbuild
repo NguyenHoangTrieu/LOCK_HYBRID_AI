@@ -1,19 +1,21 @@
 menu "LOCK_HYBRID_AI Edge Node Bridge"
 
-    config LOCK_HYBRID_WIFI_SSID
-        string "WiFi SSID"
-        default "changeme"
+    config LOCK_HYBRID_WIFI_PROV_SERVICE_NAME
+        string "WiFi setup SoftAP SSID"
+        default "LOCK_HYBRID_SETUP"
         help
-            SSID of the site's WiFi network (ASM-1).
-
-    config LOCK_HYBRID_WIFI_PASSWORD
-        string "WiFi password"
-        default "changeme"
-        help
-            WPA2-PSK password. Stored in plaintext in sdkconfig like any
-            other ESP-IDF project - fine for a dev build, but review
-            before shipping a device (flash encryption / NVS-based
-            provisioning would be the real fix, neither is set up here).
+            SSID the device broadcasts while unprovisioned (or after a
+            BOOT-button reset). It's an open AP - join it with any phone
+            or laptop and a WiFi-setup page should pop up automatically
+            (captive portal, see wifi_captive_portal.c); if it doesn't,
+            open http://192.168.4.1 manually. Enter the site's real WiFi
+            SSID/password there - esp_wifi stores them to NVS itself, no
+            WiFi SSID/password is compiled into this firmware.
+            Anyone in range of this AP during setup can set the device's
+            WiFi (there's no PoP/password gate on the portal itself,
+            matching how captive portals normally work) - fine for a
+            physically-controlled install, keep the setup window short
+            otherwise.
 
     config LOCK_HYBRID_BACKEND_BASE_URL
         string "Cloud Backend base URL"

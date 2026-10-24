@@ -100,7 +100,35 @@ do_flash() {
 	say "Flashing $elf -> $TARGET via MCU-Link (CMSIS-DAP)"
 	"$VENV_BIN/nxpdebugmbox" -i mcu-link cmd -f mcxn947 start-debug-session 2>/dev/null || true
 	pyocd_run flash -t "$TARGET" -O pack.debug_sequences.enable=false "$elf"
-	say "Done. Board running."
+	# ARCHITECTURE.md §5: -O pack.debug_sequences.enable=false above also
+	# disables the chip's ResetSystem debug sequence (the broken one, same
+	# as the others - see that section), so pyOCD leaves the core sitting
+	# in its own flash-loader RAM stub after programming instead of
+	# jumping into the new image. Confirmed on real hardware: without this
+	# step, "Board running." was a lie - the core was still executing out
+	# of RAM (PC in the 0x2000xxxx range), never reached main(), and the
+	# board produced zero serial output no matter how long you waited.
+	"$VENV_BIN/nxpdebugmbox" -i mcu-link tool reset -f mcxn947 -h
+
+	# main_edge_node.c's Smart-Lock/Camera-Preview mode selection reads
+	# two magic words from a `.noinit` SRAM section (0x0400ac20/0x0400ac24
+	# in this build, see output.map/nm) that a hardware reset - unlike a
+	# flash erase+reprogram - does NOT clear, so whichever mode was last
+	# selected at runtime (SW3 button / touchscreen) silently survives
+	# every reflash. Force it back to Smart Lock Mode after every flash so
+	# "flash and go" always lands somewhere predictable, instead of
+	# occasionally booting into Camera Preview from a stale previous
+	# session. Must come AFTER the reset above (writes to live SRAM) and
+	# needs one more reset afterward so main() re-reads the corrected
+	# value - relies on the same "hardware reset doesn't clear SRAM"
+	# property to make that second reset safe to do.
+	"$VENV_BIN/pyocd" commander -t "$TARGET" -O pack.debug_sequences.enable=false \
+		-c "halt" \
+		-c "write32 0x0400ac20 0xAA55EEDD" \
+		-c "write32 0x0400ac24 0x55AA1122" \
+		-c "go" >/dev/null 2>&1 || true
+	"$VENV_BIN/nxpdebugmbox" -i mcu-link tool reset -f mcxn947 -h
+	say "Done. Board running (Smart Lock Mode)."
 }
 
 do_erase() {
@@ -110,7 +138,11 @@ do_erase() {
 
 do_reset() {
 	say "Resetting board"
-	pyocd_run reset -t "$TARGET"
+	# Plain `pyocd reset` hits the same broken ResetSystem debug sequence
+	# as do_flash() used to (ARCHITECTURE.md §5) - it returns with no
+	# error and no effect, silently leaving the board exactly as it was.
+	# nxpdebugmbox's own reset is the one confirmed to actually work.
+	"$VENV_BIN/nxpdebugmbox" -i mcu-link tool reset -f mcxn947 -h
 }
 
 do_monitor() {
