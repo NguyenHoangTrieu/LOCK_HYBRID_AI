@@ -114,7 +114,11 @@ static uint32_t QuickBufferSignature(const uint16_t *frame)
     return sig;
 }
 
-static void WaitForFrameSettle(const uint16_t *frame)
+/* Returns how many settle-check passes it actually took (1..
+ * FRAME_SETTLE_MAX_TRIES) - fps instrumentation below uses this to find
+ * out whether this workaround is a negligible or a dominant cost, instead
+ * of guessing from the worst-case bound alone. */
+static uint32_t WaitForFrameSettle(const uint16_t *frame)
 {
     uint32_t settleSig = QuickBufferSignature(frame);
     for (uint32_t tryIdx = 0U; tryIdx < FRAME_SETTLE_MAX_TRIES; tryIdx++)
@@ -123,10 +127,11 @@ static void WaitForFrameSettle(const uint16_t *frame)
         uint32_t settleSig2 = QuickBufferSignature(frame);
         if (settleSig2 == settleSig)
         {
-            return;
+            return tryIdx + 1U;
         }
         settleSig = settleSig2;
     }
+    return FRAME_SETTLE_MAX_TRIES;
 }
 
 static void LogCameraColorStats(const uint16_t *frame)
@@ -259,6 +264,17 @@ static void RunSmartLockMode(void)
     uint32_t switchPressStartCycle = 0;
     bool switching               = false;
 
+    /* fps + per-stage timing instrumentation - same DWT cycle-counter
+     * technique the camera-preview/demo loop already uses (main.c), just
+     * never added here. Reports once/sec so it doesn't itself cost fps. */
+    uint32_t fpsFrameCount        = 0U;
+    uint32_t fpsWindowStartCycle  = DWT->CYCCNT;
+    uint32_t settleCyclesTotal    = 0U;
+    uint32_t settleTriesTotal     = 0U;
+    uint32_t inferCyclesTotal     = 0U;
+    uint32_t rfidCyclesTotal      = 0U;
+    uint32_t rfidCallCount        = 0U;
+
     while (1)
     {
         /* Check SW3 button or touch panel */
@@ -284,7 +300,10 @@ static void RunSmartLockMode(void)
 
         /* FR-8: RFID and face monitoring run concurrently */
         rfid_uid_t uid;
+        uint32_t rfidCycStart = DWT->CYCCNT;
         bool cardPresent = RFID_Poll(&uid);
+        rfidCyclesTotal += (DWT->CYCCNT - rfidCycStart);
+        rfidCallCount++;
 
         if (!CAMERA_CAPTURE_IsFrameReady())
         {
@@ -302,10 +321,15 @@ static void RunSmartLockMode(void)
         uint16_t *frame = CAMERA_CAPTURE_GetFrameBuffer();
 
         CAMERA_CAPTURE_Deinit();
-        WaitForFrameSettle(frame);
+        uint32_t settleCycStart = DWT->CYCCNT;
+        uint32_t settleTries    = WaitForFrameSettle(frame);
+        settleCyclesTotal += (DWT->CYCCNT - settleCycStart);
+        settleTriesTotal  += settleTries;
 
         ai_model_result_t aiResult;
+        uint32_t inferCycStart = DWT->CYCCNT;
         AI_MODEL_RunInference(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, &aiResult);
+        inferCyclesTotal += (DWT->CYCCNT - inferCycStart);
 
         SNAPSHOT_OnFrame(frame, DEMO_BUFFER_WIDTH, DEMO_BUFFER_HEIGHT, &aiResult, AI_MODEL_GetInputWidth(),
                          AI_MODEL_GetInputHeight());
@@ -314,6 +338,26 @@ static void RunSmartLockMode(void)
 
         CAMERA_CAPTURE_Reinit();
         skipNextFrame = true;
+
+        fpsFrameCount++;
+        if ((int32_t)(DWT->CYCCNT - fpsWindowStartCycle) >= (int32_t)SystemCoreClock)
+        {
+            uint32_t n = (fpsFrameCount == 0U) ? 1U : fpsFrameCount;
+            PRINTF("SmartLock fps: %u (avg/frame: settle=%ums(%u tries) infer=%ums rfid=%ums(%u calls))\r\n",
+                   (unsigned)fpsFrameCount,
+                   (unsigned)(settleCyclesTotal / (SystemCoreClock / 1000U) / n),
+                   (unsigned)(settleTriesTotal / n),
+                   (unsigned)(inferCyclesTotal / (SystemCoreClock / 1000U) / n),
+                   (unsigned)(rfidCyclesTotal / (SystemCoreClock / 1000U) / n),
+                   (unsigned)(rfidCallCount / n));
+            fpsFrameCount     = 0U;
+            settleCyclesTotal = 0U;
+            settleTriesTotal  = 0U;
+            inferCyclesTotal  = 0U;
+            rfidCyclesTotal   = 0U;
+            rfidCallCount     = 0U;
+            fpsWindowStartCycle = DWT->CYCCNT;
+        }
     }
 }
 

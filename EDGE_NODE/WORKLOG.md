@@ -8,7 +8,64 @@ what happened" history, kept separate so README doesn't get cluttered.
 > Older history (camera/LCD/USB bring-up, all of that now stable/working -
 > see README.md's "History" section for the summary) was trimmed from this
 > file to keep it focused on the current, unresolved problem below.
-## Memory Optimization (RAM & Flash) & LCD FPS Acceleration (2026-10-18)
+## Smart Lock build (`lock-build`): first real-hardware boot, RFID-poll fps fix (2026-10-28)
+
+**First confirmed boot of `EDGE_NODE_BUILD=ON` on real hardware** - README
+previously said this build "has not been flashed to real hardware". Builds
+clean, flashes, boots into Smart Lock Mode: camera (OV7670), UltraFace
+UltraSlim NPU (128x128 input, not the demo's 72x72 FOMO), LCD, servo
+actuator, MFRC522 RFID all initialize. `NET: ESP32-C5 SPI transport` -
+still unconfirmed, no physical SPI link between this bench's FRDM-MCXN947
+and ESP32-C5 (two separate dev boards, not the assembled baseboard).
+
+**fps instrumentation added** to `main_edge_node.c`'s `RunSmartLockMode()`
+loop (same DWT-cycle-counter technique `main.c`'s demo loop already used,
+just never ported here) - per-second `SmartLock fps: N (avg/frame:
+settle=.. infer=.. rfid=..)` printout, breaking down where frame time
+actually goes instead of guessing from the fps number alone.
+
+**Found the real bottleneck - not the camera, not the NPU: `RFID_Poll()`**.
+Measured baseline: **~10fps**, `settle=2ms(1 try) infer=19ms rfid=58ms(2
+calls)`. With no card in the field (the common case - `RFID_Poll()` runs
+on every main-loop pass, not just once per processed frame), each `REQA`
+`RFID_Transceive()` call was blocking for the full MFRC522 hardware timer
+reload (`rfid_rc522.c`'s `RFID_Init()`, `T_RELOAD_HI/LO` = 1000 ticks @
+40kHz = ~25ms) before giving up - by itself over half the ~100ms/frame
+budget, more than camera capture + NPU inference combined. The 25ms figure
+was a deliberately generous backstop ("fails fast every poll cycle"), not
+tied to anything ISO14443A actually needs - the file's own comment next to
+`RFID_Transceive()` already noted real responses come back "sub-ms on
+real hardware".
+
+**Fix**: dropped the reload to 200 ticks (~5ms) - still 5x that measured
+real-response time, so a genuine card's reply has wide margin, only the
+no-card wait (the overwhelming majority of polls while idling) gets
+faster. **Measured after: ~15-16fps** (`rfid=43-46ms(7-8 calls)` - more
+calls now fit in the same camera-wait window, but each is ~5x cheaper, net
+~15-20ms/frame saved). ~50-60% fps improvement from one timeout constant,
+no change to the camera/LCD/AI paths this project has already spent many
+sessions hardening.
+
+**Not yet re-verified**: an actual RFID card's UID read, after shortening
+the timeout - only tested with no card present (the fps-critical path).
+Confirm a real card still reads reliably before trusting this past a
+bench test.
+
+**Still open, not attempted this session** (would require touching the
+already-hardened camera/LCD code, unlike the RFID fix above): the
+mandatory one-frame SmartDMA resync discard after every
+`CAMERA_CAPTURE_Reinit()` (~33ms, inherent to this project's single-frame-
+buffer Deinit/Reinit tear-avoidance strategy, not Smart-Lock-specific -
+the demo build pays the same tax). True double-buffering was already
+ruled out elsewhere in this project as not RAM-feasible (153.6KB/buffer).
+
+**Also noticed in passing, not fixed (out of scope here)**: `actuator.c`'s
+init log prints `clock=lu Hz` instead of a number - looks like this
+project's lightweight debug console doesn't handle the `%lu` length
+modifier, which would also shift every following `%` argument in that
+PRINTF call by one (so the `prescale=` value printed right after it is
+probably wrong too).
+
 
 ### Summary of Improvements & Confirmed Hardware Results
 

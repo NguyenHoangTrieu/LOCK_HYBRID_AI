@@ -1,0 +1,13 @@
+[Unit]
+Description=LOCK_HYBRID_AI Backend Discovery Responder
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/LOCK_HYBRID_AI/CLOUD_SERVER/deploy/discovery_responder.py --port 47623 --backend-port 8000
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

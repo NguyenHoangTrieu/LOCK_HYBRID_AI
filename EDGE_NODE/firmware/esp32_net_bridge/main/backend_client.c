@@ -10,6 +10,7 @@
  */
 #include "backend_client.h"
 
+#include "backend_discovery.h"
 #include "cJSON.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -35,6 +36,30 @@ static char s_deviceKey[80] = CONFIG_LOCK_HYBRID_DEVICE_API_KEY;
 #define RESPONSE_BUF_SIZE 1024U
 static char s_responseBuf[RESPONSE_BUF_SIZE];
 static int s_responseLen;
+
+/* Re-runs discovery after this many consecutive transport failures (not
+ * HTTP-status failures - a reachable server answering 4xx/5xx says
+ * nothing about whether its address changed). Covers the backend's IP
+ * moving out from under a long-running device without a reboot; the
+ * values chosen on the very first BACKEND_Init() call are what get used
+ * until this fires. */
+#define DISCOVERY_RETRY_FAILURE_THRESHOLD 3U
+static uint32_t s_consecutiveTransportFailures = 0U;
+
+static void TryDiscoverBackend(void)
+{
+#if CONFIG_LOCK_HYBRID_BACKEND_AUTO_DISCOVER
+    char discovered[96];
+    if (BACKEND_DISCOVERY_Resolve(discovered, sizeof(discovered)))
+    {
+        (void)strlcpy(s_baseUrl, discovered, sizeof(s_baseUrl));
+    }
+    else
+    {
+        ESP_LOGI(TAG, "discovery unavailable, keeping configured base URL: %s", s_baseUrl);
+    }
+#endif
+}
 
 static esp_err_t HttpEventHandler(esp_http_client_event_t *evt)
 {
@@ -96,6 +121,7 @@ void BACKEND_Init(void)
         }
         nvs_close(nvsHandle);
     }
+    TryDiscoverBackend();
     ESP_LOGI(TAG, "backend base URL: %s", s_baseUrl);
 }
 
@@ -151,8 +177,17 @@ static bool PerformJsonRequest(const char *path, esp_http_client_method_t method
     if (err != ESP_OK)
     {
         ESP_LOGW(TAG, "%s: transport error %s", path, esp_err_to_name(err));
+        s_consecutiveTransportFailures++;
+        if (s_consecutiveTransportFailures >= DISCOVERY_RETRY_FAILURE_THRESHOLD)
+        {
+            ESP_LOGW(TAG, "%u consecutive transport failures - retrying discovery",
+                     (unsigned)s_consecutiveTransportFailures);
+            TryDiscoverBackend();
+            s_consecutiveTransportFailures = 0U;
+        }
         return false;
     }
+    s_consecutiveTransportFailures = 0U;
     if (status != expectStatus)
     {
         ESP_LOGW(TAG, "%s: HTTP %d: %s", path, status, s_responseBuf);

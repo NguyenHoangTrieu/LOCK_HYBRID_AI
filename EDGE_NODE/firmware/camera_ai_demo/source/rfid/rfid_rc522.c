@@ -173,13 +173,27 @@ bool RFID_Init(void)
     SDK_DelayAtLeastUs(50U * 1000U, SDK_DEVICE_MAXIMUM_CPU_CLOCK_FREQUENCY);
 
     /* Timer: used internally by Transceive's TimerIRq as a hardware
-     * timeout backstop (datasheet 8.7) - 40kHz tick, ~25ms reload,
-     * independent of the software deadline loop above which is the one
-     * actually bounding RFID_Poll()'s worst case. */
+     * timeout backstop (datasheet 8.7) - 40kHz tick (prescaler 169:
+     * 13.56MHz / (2*169+1)).
+     *
+     * Was reload=1000 (~25ms). Measured on real hardware (see
+     * main_edge_node.c's "SmartLock fps" instrumentation): with no card
+     * in the field (the common case - this fires on EVERY main-loop pass,
+     * including every pass spent just waiting for the next camera frame,
+     * not once per processed frame), RFID_Poll() -> this REQA Transceive()
+     * was burning ~29ms waiting out this exact timer - by itself over
+     * HALF the ~100ms/frame budget (10fps), more than camera capture + AI
+     * inference combined. Dropped reload to 200 (~5ms) - still 5x this
+     * file's own measured "sub-ms on real hardware" ATQA response time
+     * (comment above RFID_Transceive()), so a real card's reply still
+     * clears it with wide margin; only the no-card wait (the overwhelmingly
+     * common case while idling) gets faster. Not yet re-tested with an
+     * actual card physically present - re-check RFID still reads a real
+     * UID reliably before trusting this past a bench test with no card. */
     RFID_WriteReg(RC522_REG_T_MODE, 0x80U);
     RFID_WriteReg(RC522_REG_T_PRESCALER, 0xA9U);
-    RFID_WriteReg(RC522_REG_T_RELOAD_HI, 0x03U);
-    RFID_WriteReg(RC522_REG_T_RELOAD_LO, 0xE8U);
+    RFID_WriteReg(RC522_REG_T_RELOAD_HI, 0x00U);
+    RFID_WriteReg(RC522_REG_T_RELOAD_LO, 0xC8U);
 
     RFID_WriteReg(RC522_REG_TX_ASK, 0x40U); /* Force100ASK - required by ISO14443A, every MFRC522 reference driver sets this */
     RFID_WriteReg(RC522_REG_MODE, 0x3DU);   /* TxWaitRF + CRC preset 0x6363 (datasheet default for ISO14443A) */

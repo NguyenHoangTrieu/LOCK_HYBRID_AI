@@ -17,6 +17,24 @@ menu "LOCK_HYBRID_AI Edge Node Bridge"
             physically-controlled install, keep the setup window short
             otherwise.
 
+    config LOCK_HYBRID_WIFI_SSID
+        string "WiFi SSID to connect to on first boot (optional)"
+        default ""
+        help
+            Leave empty (default) to keep the captive-portal setup flow
+            above - the device boots into the SoftAP and waits for
+            someone to submit the real WiFi via a browser. Fill this in
+            (and the password below) to skip the portal entirely: on the
+            first unprovisioned boot the device connects straight to
+            this SSID instead, no manual setup step. Either way, once
+            connected the credentials are what esp_wifi persists to its
+            own NVS - a later BOOT-button factory reset re-enters the
+            portal regardless of what was compiled in here.
+
+    config LOCK_HYBRID_WIFI_PASSWORD
+        string "WiFi password for the SSID above"
+        default ""
+
     config LOCK_HYBRID_BACKEND_BASE_URL
         string "Cloud Backend base URL"
         default "http://192.168.1.100:8000"
@@ -34,6 +52,29 @@ menu "LOCK_HYBRID_AI Edge Node Bridge"
             admin web app (CLOUD_SERVER) when this device was registered.
             Cannot be recovered from the server afterwards - re-register
             the device if it's lost.
+
+    config LOCK_HYBRID_BACKEND_AUTO_DISCOVER
+        bool "Auto-discover backend IP via UDP broadcast"
+        default y
+        help
+            Before falling back to the URL below (or its NVS override),
+            broadcast a UDP discovery request on
+            LOCK_HYBRID_BACKEND_DISCOVERY_PORT and use whichever host
+            replies - see backend_discovery.c. Point at
+            CLOUD_SERVER/deploy/discovery_responder.py running on the
+            backend host. Lets the device find the server on its current
+            DHCP-assigned IP without re-provisioning every time that IP
+            changes; the URL below (or NVS override) is still used as a
+            fallback whenever no reply arrives in time. mDNS was tried
+            first and ruled out - see backend_discovery.h for why.
+
+    config LOCK_HYBRID_BACKEND_DISCOVERY_PORT
+        int "Backend discovery UDP port"
+        default 47623
+        depends on LOCK_HYBRID_BACKEND_AUTO_DISCOVER
+        help
+            Must match discovery_responder.py's own port on the backend
+            host (its --port flag / DISCOVERY_PORT default).
 
     config LOCK_HYBRID_BACKEND_TIMEOUT_MS
         int "Backend HTTP request timeout (ms)"

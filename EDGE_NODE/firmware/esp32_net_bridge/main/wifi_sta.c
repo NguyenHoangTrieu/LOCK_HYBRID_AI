@@ -210,9 +210,32 @@ void WIFI_Init(void)
 
     if (!IsProvisioned())
     {
-        ESP_LOGI(TAG, "not provisioned - starting WiFi setup captive portal");
-        s_inSetupMode = true; /* lets ButtonMonitorTask know a press now means "leave setup", not "enter setup" */
-        WIFI_CAPTIVE_PORTAL_RunForever(); /* does not return - reboots once credentials are saved, or BOOT toggles back to normal mode */
+        if (strlen(CONFIG_LOCK_HYBRID_WIFI_SSID) > 0)
+        {
+            /* Compiled-in SSID/password (LOCK_HYBRID_WIFI_SSID/_PASSWORD in
+             * Kconfig.projbuild) - skip the captive portal, connect
+             * straight to this network on first boot. Same esp_wifi_set_
+             * config() call the portal's SavePostHandler() makes, just
+             * with a value baked in at build time instead of typed into a
+             * form; esp_wifi persists it to its own NVS from here on,
+             * same as the portal path, so this only matters once per
+             * erase/factory-reset. */
+            ESP_LOGI(TAG, "not provisioned - connecting with compiled-in WiFi credentials for SSID '%s'",
+                     CONFIG_LOCK_HYBRID_WIFI_SSID);
+            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+            wifi_config_t wifiConfig = {0};
+            strlcpy((char *)wifiConfig.sta.ssid, CONFIG_LOCK_HYBRID_WIFI_SSID, sizeof(wifiConfig.sta.ssid));
+            strlcpy((char *)wifiConfig.sta.password, CONFIG_LOCK_HYBRID_WIFI_PASSWORD, sizeof(wifiConfig.sta.password));
+            ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifiConfig));
+            SetProvisioned();
+            /* falls through to the normal "already provisioned" path below */
+        }
+        else
+        {
+            ESP_LOGI(TAG, "not provisioned - starting WiFi setup captive portal");
+            s_inSetupMode = true; /* lets ButtonMonitorTask know a press now means "leave setup", not "enter setup" */
+            WIFI_CAPTIVE_PORTAL_RunForever(); /* does not return - reboots once credentials are saved, or BOOT toggles back to normal mode */
+        }
     }
 
     /* Registered only once provisioned, not up above - EventHandler's
