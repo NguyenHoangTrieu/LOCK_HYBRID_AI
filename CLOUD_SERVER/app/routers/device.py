@@ -123,15 +123,19 @@ def submit_enrollment_card(
 
     card = cards.get_card(db, body.card_uid)
     if card is not None and card["state"] == "assigned" and card["user_id"] == session["user_id"]:
+        enrollment.record_result(db, device["id"], "already_registered", user_name=session["user_name"], card_uid=body.card_uid)
         enrollment.cancel_session(db, device["id"])
         return EnrollmentCardSubmitResponse(result="already_registered")
 
     if card is not None and card["state"] == "assigned":
         holder = db.execute("SELECT name FROM users WHERE id = ?", (card["user_id"],)).fetchone()
+        enrollment.record_result(db, device["id"], "needs_confirmation", user_name=session["user_name"],
+                                 card_uid=body.card_uid, holder_name=holder["name"] if holder else None)
         enrollment.cancel_session(db, device["id"])
         return EnrollmentCardSubmitResponse(result="needs_confirmation", holder_name=holder["name"] if holder else None)
 
     cards.assign_card(db, body.card_uid, session["user_id"], by=f"enrollment-session:{device['id']}")
+    enrollment.record_result(db, device["id"], "assigned", user_name=session["user_name"], card_uid=body.card_uid)
     enrollment.cancel_session(db, device["id"])
     return EnrollmentCardSubmitResponse(result="assigned")
 

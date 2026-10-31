@@ -88,6 +88,7 @@ class DeviceOut(BaseModel):
     fw_version: str | None
     card_store_version: int
     enrollment_session: EnrollmentSessionOut | None = None
+    last_enroll_result: dict | None = None
 
 
 class DeviceUpdateRequest(BaseModel):

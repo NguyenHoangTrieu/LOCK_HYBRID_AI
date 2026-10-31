@@ -4,6 +4,7 @@ Every route depends on require_admin.
 """
 import csv
 import io
+import json
 import sqlite3
 from datetime import datetime, timezone
 
@@ -49,6 +50,10 @@ def get_user_avatar(user_id: int, db: sqlite3.Connection = Depends(get_db)):
 
 def _device_out(db: sqlite3.Connection, row: sqlite3.Row) -> DeviceOut:
     session = enrollment.get_active_session(db, row) if row["mode"] == "enrollment" else None
+    if row["session_active"] and session is None:
+        # the session just expired inside get_active_session(), which wrote
+        # last_enroll_result - re-read so this very response carries it
+        row = db.execute("SELECT * FROM devices WHERE id = ?", (row["id"],)).fetchone()
     return DeviceOut(
         id=row["id"],
         name=row["name"],
@@ -59,6 +64,7 @@ def _device_out(db: sqlite3.Connection, row: sqlite3.Row) -> DeviceOut:
         fw_version=row["fw_version"],
         card_store_version=row["card_store_version"],
         enrollment_session=EnrollmentSessionOut(**session) if session else None,
+        last_enroll_result=json.loads(row["last_enroll_result"]) if row["last_enroll_result"] else None,
     )
 
 
@@ -208,10 +214,24 @@ def update_user(
 @router.delete("/users/{user_id}")
 def delete_user(user_id: int, admin: sqlite3.Row = Depends(require_admin), db: sqlite3.Connection = Depends(get_db)):
     """FR-31/SR-5: permanent delete of the user and their data."""
+    if db.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="User not found")
     cards_mod.release_card_for_user(db, user_id, by=admin["username"])
     inout.delete_avatar_file(user_id)
+    # Every table that still points at this user must be cleared first, or
+    # SQLite's foreign_keys=ON turns the final DELETE into a 500: assignment
+    # history (user_id is NOT NULL, so those rows go), a lost card that still
+    # names the user, and any device enrollment session targeting them.
+    db.execute("DELETE FROM card_assignments WHERE user_id = ?", (user_id,))
+    db.execute("UPDATE cards SET user_id = NULL WHERE user_id = ?", (user_id,))
+    db.execute(
+        "UPDATE devices SET session_active = 0, session_type = NULL, session_user_id = NULL, "
+        "session_started_at = NULL WHERE session_user_id = ?",
+        (user_id,),
+    )
     db.execute("UPDATE attendance_events SET user_id = NULL WHERE user_id = ?", (user_id,))
     db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    cards_mod.bump_card_store_version(db)
     return {"ok": True}
 
 
@@ -345,6 +365,7 @@ def start_enrollment(device_id: str, body: EnrollmentStartRequest, db: sqlite3.C
 @router.post("/devices/{device_id}/enrollment/cancel")
 def cancel_enrollment(device_id: str, db: sqlite3.Connection = Depends(get_db)):
     enrollment.cancel_session(db, device_id)
+    db.execute("UPDATE devices SET last_enroll_result = NULL WHERE id = ?", (device_id,))
     return {"ok": True}
 
 

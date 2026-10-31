@@ -9,6 +9,7 @@ Only the card-registration session (FR-48, UI-20/21) is implemented
 here. Face-enrollment sessions (FR-47, UI-18/19 - live camera preview
 with pose guidance) are NOT implemented in this change; see WORKLOG.md.
 """
+import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -31,6 +32,8 @@ def get_active_session(db: sqlite3.Connection, device: sqlite3.Row) -> dict | No
         return None
     now = datetime.now(timezone.utc)
     if _is_expired(device, now):
+        user = db.execute("SELECT name FROM users WHERE id = ?", (device["session_user_id"],)).fetchone()
+        record_result(db, device["id"], "timeout", user_name=user["name"] if user else None)
         cancel_session(db, device["id"])
         return None
     started = datetime.fromisoformat(device["session_started_at"])
@@ -42,6 +45,22 @@ def get_active_session(db: sqlite3.Connection, device: sqlite3.Row) -> dict | No
         "user_name": user["name"] if user else None,
         "expires_in_sec": max(remaining, 0),
     }
+
+
+def record_result(db: sqlite3.Connection, device_id: str, result: str, *, user_name: str | None = None,
+                  card_uid: str | None = None, holder_name: str | None = None) -> None:
+    """Remembers how the last card-registration session ended, so the admin
+    web app can tell "card registered" / "already yours" / "belongs to
+    someone else" / "timed out" apart - cancel_session() alone erases all of
+    that and the page would just silently flip back to the idle state."""
+    payload = {
+        "result": result,
+        "user_name": user_name,
+        "card_uid": card_uid,
+        "holder_name": holder_name,
+        "at": datetime.now(timezone.utc).isoformat(),
+    }
+    db.execute("UPDATE devices SET last_enroll_result = ? WHERE id = ?", (json.dumps(payload), device_id))
 
 
 def start_session(db: sqlite3.Connection, device: sqlite3.Row, *, user_id: int, session_type: str, timeout_sec: int) -> None:
@@ -58,7 +77,7 @@ def start_session(db: sqlite3.Connection, device: sqlite3.Row, *, user_id: int, 
     db.execute(
         """
         UPDATE devices SET session_active = 1, session_type = ?, session_user_id = ?,
-               session_started_at = ?, session_timeout_sec = ? WHERE id = ?
+               session_started_at = ?, session_timeout_sec = ?, last_enroll_result = NULL WHERE id = ?
         """,
         (session_type, user_id, datetime.now(timezone.utc).isoformat(), timeout_sec, device["id"]),
     )

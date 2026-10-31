@@ -127,6 +127,7 @@ _DEVICES_MIGRATION_COLUMNS = {
     "session_user_id": "INTEGER REFERENCES users(id)",
     "session_started_at": "TEXT",
     "session_timeout_sec": "INTEGER NOT NULL DEFAULT 60",
+    "last_enroll_result": "TEXT",
 }
 
 

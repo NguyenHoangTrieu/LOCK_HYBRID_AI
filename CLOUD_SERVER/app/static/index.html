@@ -22,6 +22,9 @@
   button.btn { background: #2563eb; color: #fff; border: none; padding: 7px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
   button.btn.danger { background: #dc2626; }
   button.btn.secondary { background: #64748b; }
+  #toast-host { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+  .toast { padding: 12px 16px; border-radius: 6px; font-size: 14px; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  .toast.ok { background: #16a34a; } .toast.warn { background: #d97706; } .toast.err { background: #dc2626; }
   .pill { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .pill.granted { background: #dcfce7; color: #166534; }
   .pill.denied { background: #fee2e2; color: #991b1b; }
@@ -268,7 +271,15 @@
   </div>
 </div>
 
+<div id="toast-host"></div>
 <script>
+function toast(msg, kind = 'ok', ms = 6000) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.textContent = msg;
+  document.getElementById('toast-host').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
 let authHeader = localStorage.getItem('authHeader') || null;
 
 function api(path, opts = {}) {
@@ -424,7 +435,9 @@ function assignCard(id) {
 
 function deleteUser(id) {
   if (!confirm('Permanently delete this user and their data?')) return;
-  api(`/admin/api/users/${id}`, { method: 'DELETE' }).then(loadUsers);
+  api(`/admin/api/users/${id}`, { method: 'DELETE' })
+    .then(() => { toast('Đã xoá nhân viên', 'ok'); return Promise.all([loadUsers(), loadCards()]); })
+    .catch(e => { toast('Xoá thất bại: ' + e.message, 'err', 10000); loadUsers(); });
 }
 
 let selectedAvatarFile = null;
@@ -518,6 +531,7 @@ function enrollPhotos(id) {
 
 function loadDevices() {
   return api('/admin/api/devices').then(devices => {
+    devices.forEach(announceEnrollResult);
     document.querySelector('#devices-table tbody').innerHTML = devices.map(d => {
       const safeName = (d.name || '').replace(/['\\]/g, '');
       return `
@@ -539,6 +553,25 @@ function loadDevices() {
     `;
     }).join('');
   }).catch(e => console.error('loadDevices error:', e));
+}
+
+/* Each card-registration session ends silently server-side (the device just
+ * stops being in "capturing" state) - the server now records how it ended in
+ * last_enroll_result; show it exactly once per result, then refresh the
+ * lists so the new card/assignment is visible without a manual reload. */
+const seenEnrollResults = {};
+function announceEnrollResult(d) {
+  const r = d.last_enroll_result;
+  if (!r || seenEnrollResults[d.id] === r.at) return;
+  const first = !(d.id in seenEnrollResults);
+  seenEnrollResults[d.id] = r.at;
+  if (first && Date.now() - Date.parse(r.at) > 15000) return; /* stale result from before this page loaded */
+  const who = r.user_name || 'nhân viên';
+  if (r.result === 'assigned') toast(`✓ Đăng ký thẻ thành công: ${r.card_uid} → ${who}`, 'ok', 10000);
+  else if (r.result === 'already_registered') toast(`Thẻ ${r.card_uid} đã được đăng ký cho ${who} từ trước`, 'warn', 10000);
+  else if (r.result === 'needs_confirmation') toast(`Thẻ ${r.card_uid} đang thuộc về ${r.holder_name || 'người khác'} - hãy huỷ gán thẻ đó trước rồi đăng ký lại cho ${who}`, 'warn', 12000);
+  else if (r.result === 'timeout') toast(`Hết thời gian chờ quẹt thẻ cho ${who}`, 'err', 8000);
+  loadUsers(); loadCards();
 }
 
 function enrollmentCellHtml(d) {
