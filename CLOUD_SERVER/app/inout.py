@@ -273,23 +273,23 @@ def generate_inout_excel(db: sqlite3.Connection, from_date_str: str, to_date_str
     )
 
     # -------------------------------------------------------------------------
-    # Sheet 1: Tổng Hợp Vào-Ra (Daily Summary)
+    # Sheet 1: In/Out Summary (daily)
     # -------------------------------------------------------------------------
     ws1 = wb.active
-    ws1.title = "Tổng Hợp Vào-Ra"
+    ws1.title = "In-Out Summary"
     ws1.views.sheetView[0].showGridLines = True
 
     # Title & Metadata
-    ws1.append(["BÁO CÁO ĐIỂM DANH VÀO / RA"])
+    ws1.append(["ATTENDANCE IN / OUT REPORT"])
     ws1.cell(row=1, column=1).font = font_title
-    ws1.append([f"Khoảng thời gian: {from_date_str} đến {to_date_str}  |  Xuất ngày: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+    ws1.append([f"Period: {from_date_str} to {to_date_str}  |  Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"])
     ws1.cell(row=2, column=1).font = font_subtitle
     ws1.append([])  # blank row
 
     headers_ws1 = [
-        "Ngày", "Mã NV / Org", "Họ và Tên",
-        "Giờ Vào Đầu (Check-In)", "Giờ Ra Cuối (Check-Out)",
-        "Tổng Thời Gian", "Số Lần Quét", "Trạng Thái"
+        "Date", "Staff ID / Org", "Full Name",
+        "First Check-In", "Last Check-Out",
+        "Total Time", "Scan Count", "Status"
     ]
     ws1.append(headers_ws1)
     header_row_idx = 4
@@ -315,15 +315,15 @@ def generate_inout_excel(db: sqlite3.Connection, from_date_str: str, to_date_str
                 continue
 
             row_count_ws1 += 1
-            status_text = "CHƯA VÀO"
+            status_text = "NOT IN"
             status_fill = fill_absent
             status_font = color_absent_text
             if u["status"] == "in":
-                status_text = "ĐANG CÓ MẶT (IN)"
+                status_text = "PRESENT (IN)"
                 status_fill = fill_in
                 status_font = color_in_text
             elif u["status"] == "out":
-                status_text = "ĐÃ RA NGOÀI (OUT)"
+                status_text = "CHECKED OUT (OUT)"
                 status_fill = fill_out
                 status_font = color_out_text
 
@@ -360,20 +360,20 @@ def generate_inout_excel(db: sqlite3.Connection, from_date_str: str, to_date_str
         curr_d += timedelta(days=1)
 
     # -------------------------------------------------------------------------
-    # Sheet 2: Chi Tiết Nhật Ký (Raw Log)
+    # Sheet 2: Scan Details (raw log)
     # -------------------------------------------------------------------------
-    ws2 = wb.create_sheet("Nhật Ký Quét Chi Tiết")
+    ws2 = wb.create_sheet("Scan Details")
     ws2.views.sheetView[0].showGridLines = True
 
-    ws2.append(["NHẬT KÝ QUÉT CHI TIẾT (LOGS)"])
+    ws2.append(["SCAN DETAILS (LOGS)"])
     ws2.cell(row=1, column=1).font = font_title
-    ws2.append([f"Từ: {from_date_str} đến: {to_date_str}"])
+    ws2.append([f"From: {from_date_str} to: {to_date_str}"])
     ws2.cell(row=2, column=1).font = font_subtitle
     ws2.append([])
 
     headers_ws2 = [
-        "STT", "Thời Gian Quét", "Mã NV / Org", "Họ và Tên",
-        "Hướng (Direction)", "Kết Quả", "Phương Thức", "Thiết Bị", "Độ Tin Cậy"
+        "No.", "Scan Time", "Staff ID / Org", "Full Name",
+        "Direction", "Outcome", "Method", "Device", "Confidence"
     ]
     ws2.append(headers_ws2)
     for col_idx in range(1, len(headers_ws2) + 1):
@@ -408,16 +408,16 @@ def generate_inout_excel(db: sqlite3.Connection, from_date_str: str, to_date_str
     row_count_ws2 = 4
     for idx, ev in enumerate(events, 1):
         row_count_ws2 += 1
-        dir_text = "VÀO (CHECK-IN)" if ev["direction"] == "in" else ("RA (CHECK-OUT)" if ev["direction"] == "out" else "--")
-        method_text = "Khuôn mặt" if ev["method"] == "face" else "Thẻ RFID"
-        outcome_text = "Chấp thuận" if ev["outcome"] == "granted" else "Từ chối"
+        dir_text = "IN (CHECK-IN)" if ev["direction"] == "in" else ("OUT (CHECK-OUT)" if ev["direction"] == "out" else "--")
+        method_text = "Face" if ev["method"] == "face" else "RFID card"
+        outcome_text = "Granted" if ev["outcome"] == "granted" else "Denied"
         conf_text = f"{round(ev['confidence'] * 100, 1)}%" if ev["confidence"] is not None else "--"
 
         ws2.append([
             idx,
             _format_full_datetime(ev["occurred_at"]),
             ev["org_id"] or "",
-            ev["user_name"] or "(Chưa đăng ký)",
+            ev["user_name"] or "(Unregistered)",
             dir_text,
             outcome_text,
             method_text,
